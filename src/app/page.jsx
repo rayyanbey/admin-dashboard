@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import Logo from '@/components/Logo'
 
 export default function HomePage() {
   const { data: session, status } = useSession()
@@ -19,8 +20,22 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <Card className="w-[350px]">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-400">
+      <style jsx global>{`
+        @keyframes gradient-x {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .animate-gradient-x {
+          background-size: 200% 200%;
+          animation: gradient-x 15s ease infinite;
+        }
+      `}</style>
+      <div className="mb-8">
+        <Logo />
+      </div>
+      <Card className="w-[350px] bg-white bg-opacity-90 backdrop-blur-md">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">Welcome to Admin Dashboard</CardTitle>
           <CardDescription className="text-center">
