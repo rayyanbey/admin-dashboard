@@ -12,6 +12,12 @@ export default NextAuth({
     signIn: '/login',
   },
   callbacks: {
+    async signIn({user}){
+      if(user.email === process.env.ADMIN_EMAIL){
+        return true
+      }
+      return false
+    },
     async jwt({ token, account }) {
       // Persist the OAuth access_token to the token right after signin
       if (account) {
