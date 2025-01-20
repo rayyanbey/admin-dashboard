@@ -1,71 +1,59 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { PlusCircle, X } from 'lucide-react'
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PlusCircle, X } from "lucide-react"
 
 export default function CreateEventPage() {
   const [event, setEvent] = useState({
-    title: '',
+    title: "",
     images: [],
     imageFiles: [],
-    description: '',
-    type: '',
-    countryName: '',
+    description: "",
+    type: "",
+    countryName: "",
     posters: [],
     posterFiles: [],
-    duration: '',
+    duration: "",
     pricing: {},
-    visa: '',
-    descriptionTitle: '',
-    importantNote: '',
-    month: '',
+    visa: "",
+    descriptionTitle: "",
+    importantNote: "",
+    month: "",
     eventDetails: {
-      hotels: []
+      hotels: [],
     },
-    flights: []
+    flights: [],
   })
 
-  const handleChange = (e, section = 'event') => {
-    const { name, value } = e.target
-    if (name === 'images' || name === 'posters') {
-      const imageArray = value.split(',').filter(url => url.trim() !== '');
-      setEvent(prev => ({ 
-        ...prev, 
-        [name]: [...(prev[name] || []).filter(img => img.startsWith('blob:')), ...imageArray] 
-      }));
-    } else if (name === 'type') {
-      setEvent(prev => ({
-        ...prev,
-        type: value,
-        countryName: value === 'T' ? prev.countryName : '',
-        posters: value === 'H' ? prev.posters : [],
-        posterFiles: value === 'H' ? prev.posterFiles : []
-      }))
-    } else if (section === 'event') {
-      setEvent(prev => ({ ...prev, [name]: value }))
-    } else if (section === 'eventDetails') {
-      setEvent(prev => ({ ...prev, eventDetails: { ...prev.eventDetails, [name]: value } }))
+  const handleChange = (e, name = null) => {
+    if (name) {
+      // This is for the Select component
+      setEvent((prev) => ({ ...prev, [name]: e }))
+    } else {
+      // This is for regular input fields
+      const { name, value } = e.target
+      setEvent((prev) => ({ ...prev, [name]: value }))
     }
   }
 
   const handleImageUpload = (e, field) => {
     const files = Array.from(e.target.files)
-    setEvent(prev => ({
+    setEvent((prev) => ({
       ...prev,
       [`${field}Files`]: [...(prev[`${field}Files`] || []), ...files],
-      [field]: [...(prev[field] || []), ...files.map(file => URL.createObjectURL(file))]
+      [field]: [...(prev[field] || []), ...files.map((file) => URL.createObjectURL(file))],
     }))
   }
 
   const handleHotelChange = (index, field, value) => {
-    setEvent(prev => {
+    setEvent((prev) => {
       const newHotels = [...prev.eventDetails.hotels]
       newHotels[index] = { ...newHotels[index], [field]: value }
       return { ...prev, eventDetails: { ...prev.eventDetails, hotels: newHotels } }
@@ -74,19 +62,19 @@ export default function CreateEventPage() {
 
   const handleHotelImageUpload = (index, e) => {
     const files = Array.from(e.target.files)
-    setEvent(prev => {
+    setEvent((prev) => {
       const newHotels = [...prev.eventDetails.hotels]
       newHotels[index] = {
         ...newHotels[index],
         imageFiles: [...(newHotels[index].imageFiles || []), ...files],
-        images: [...(newHotels[index].images || []), ...files.map(file => URL.createObjectURL(file))]
+        images: [...(newHotels[index].images || []), ...files.map((file) => URL.createObjectURL(file))],
       }
       return { ...prev, eventDetails: { ...prev.eventDetails, hotels: newHotels } }
     })
   }
 
   const handleFlightChange = (index, field, value) => {
-    setEvent(prev => {
+    setEvent((prev) => {
       const newFlights = [...prev.flights]
       newFlights[index] = { ...newFlights[index], [field]: value }
       return { ...prev, flights: newFlights }
@@ -94,36 +82,36 @@ export default function CreateEventPage() {
   }
 
   const addHotel = () => {
-    setEvent(prev => ({
+    setEvent((prev) => ({
       ...prev,
       eventDetails: {
         ...prev.eventDetails,
-        hotels: [...prev.eventDetails.hotels, { name: '', location: '', description: '', images: [], imageFiles: [] }]
-      }
+        hotels: [...prev.eventDetails.hotels, { name: "", location: "", description: "", images: [], imageFiles: [] }],
+      },
     }))
   }
 
   const removeHotel = (index) => {
-    setEvent(prev => ({
+    setEvent((prev) => ({
       ...prev,
       eventDetails: {
         ...prev.eventDetails,
-        hotels: prev.eventDetails.hotels.filter((_, i) => i !== index)
-      }
+        hotels: prev.eventDetails.hotels.filter((_, i) => i !== index),
+      },
     }))
   }
 
   const addFlight = () => {
-    setEvent(prev => ({
+    setEvent((prev) => ({
       ...prev,
-      flights: [...prev.flights, { departureCity: '', destinationCity: '', departureDate: '', returnDate: '' }]
+      flights: [...prev.flights, { departureCity: "", destinationCity: "", departureDate: "", returnDate: "" }],
     }))
   }
 
   const removeFlight = (index) => {
-    setEvent(prev => ({
+    setEvent((prev) => ({
       ...prev,
-      flights: prev.flights.filter((_, i) => i !== index)
+      flights: prev.flights.filter((_, i) => i !== index),
     }))
   }
 
@@ -132,8 +120,8 @@ export default function CreateEventPage() {
     const formData = new FormData()
 
     // Append event data
-    Object.keys(event).forEach(key => {
-      if (key !== 'imageFiles' && key !== 'posterFiles' && key !== 'eventDetails' && key !== 'flights') {
+    Object.keys(event).forEach((key) => {
+      if (key !== "imageFiles" && key !== "posterFiles" && key !== "eventDetails" && key !== "flights") {
         formData.append(key, JSON.stringify(event[key]))
       }
     })
@@ -157,10 +145,10 @@ export default function CreateEventPage() {
     })
 
     // Append flight data
-    formData.append('flights', JSON.stringify(event.flights))
+    formData.append("flights", JSON.stringify(event.flights))
 
     // Here you would typically send the formData to your backend
-    console.log('Form data to be sent:', formData)
+    console.log("Form data to be sent:", formData)
   }
 
   return (
@@ -181,24 +169,24 @@ export default function CreateEventPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Title (Navigation title)</Label>
-                  <Input 
-                    id="title" 
-                    name="title" 
-                    value={event.title} 
-                    onChange={handleChange} 
-                    required 
-                    minLength={5} 
-                    maxLength={150} 
+                  <Input
+                    id="title"
+                    name="title"
+                    value={event.title}
+                    onChange={handleChange}
+                    required
+                    minLength={5}
+                    maxLength={150}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="images">Images (URLs or upload)</Label>
                   <div className="flex flex-col space-y-2">
-                    <Input 
-                      id="images" 
-                      name="images" 
-                      value={event.images.filter(img => !img.startsWith('blob:')).join(',')} 
-                      onChange={handleChange} 
+                    <Input
+                      id="images"
+                      name="images"
+                      value={event.images.filter((img) => !img.startsWith("blob:")).join(",")}
+                      onChange={handleChange}
                       placeholder="Enter image URLs separated by commas"
                     />
                     <Input
@@ -206,7 +194,7 @@ export default function CreateEventPage() {
                       type="file"
                       accept="image/*"
                       multiple
-                      onChange={(e) => handleImageUpload(e, 'images')}
+                      onChange={(e) => handleImageUpload(e, "images")}
                     />
                   </div>
                   {event.images.length < 3 && (
@@ -215,23 +203,19 @@ export default function CreateEventPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
-                  <Textarea 
-                    id="description" 
-                    name="description" 
-                    value={event.description} 
-                    onChange={handleChange} 
-                    required 
-                    minLength={20} 
-                    maxLength={2000} 
+                  <Textarea
+                    id="description"
+                    name="description"
+                    value={event.description}
+                    onChange={handleChange}
+                    required
+                    minLength={20}
+                    maxLength={2000}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="type">Type</Label>
-                  <Select 
-                    name="type" 
-                    value={event.type} 
-                    onValueChange={handleChange}
-                  >
+                  <Select name="type" value={event.type} onValueChange={(value) => handleChange(value, "type")}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select event type" />
                     </SelectTrigger>
@@ -242,29 +226,29 @@ export default function CreateEventPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                {event.type === 'T' && (
+                {event.type === "T" && (
                   <div className="space-y-2">
                     <Label htmlFor="countryName">Country Name</Label>
-                    <Input 
-                      id="countryName" 
-                      name="countryName" 
-                      value={event.countryName} 
-                      onChange={handleChange} 
-                      required 
-                      minLength={2} 
-                      maxLength={100} 
+                    <Input
+                      id="countryName"
+                      name="countryName"
+                      value={event.countryName}
+                      onChange={handleChange}
+                      required
+                      minLength={2}
+                      maxLength={100}
                     />
                   </div>
                 )}
-                {event.type === 'H' && (
+                {event.type === "H" && (
                   <div className="space-y-2">
                     <Label htmlFor="posters">Posters (URLs or upload, at least 1 required)</Label>
                     <div className="flex flex-col space-y-2">
-                      <Input 
-                        id="posters" 
-                        name="posters" 
-                        value={event.posters.filter(poster => !poster.startsWith('blob:')).join(',')} 
-                        onChange={handleChange} 
+                      <Input
+                        id="posters"
+                        name="posters"
+                        value={event.posters.filter((poster) => !poster.startsWith("blob:")).join(",")}
+                        onChange={handleChange}
                         placeholder="Enter poster URLs separated by commas"
                       />
                       <Input
@@ -272,7 +256,7 @@ export default function CreateEventPage() {
                         type="file"
                         accept="image/*"
                         multiple
-                        onChange={(e) => handleImageUpload(e, 'posters')}
+                        onChange={(e) => handleImageUpload(e, "posters")}
                       />
                     </div>
                     {event.posters.length === 0 && (
@@ -282,44 +266,42 @@ export default function CreateEventPage() {
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="duration">Duration (nights)</Label>
-                  <Input 
-                    id="duration" 
-                    name="duration" 
-                    type="number" 
-                    value={event.duration} 
-                    onChange={handleChange} 
-                    required 
-                    min={1} 
-                    max={365} 
+                  <Input
+                    id="duration"
+                    name="duration"
+                    type="number"
+                    value={event.duration}
+                    onChange={handleChange}
+                    required
+                    min={1}
+                    max={365}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pricing">Pricing (JSON)</Label>
-                  <Textarea 
-                    id="pricing" 
-                    name="pricing" 
-                    value={typeof event.pricing === 'object' ? JSON.stringify(event.pricing, null, 2) : event.pricing} 
+                  <Textarea
+                    id="pricing"
+                    name="pricing"
+                    value={typeof event.pricing === "object" ? JSON.stringify(event.pricing, null, 2) : event.pricing}
                     onChange={(e) => {
                       try {
-                        const parsed = JSON.parse(e.target.value);
-                        setEvent(prev => ({ ...prev, pricing: parsed }));
+                        const parsed = JSON.parse(e.target.value)
+                        setEvent((prev) => ({ ...prev, pricing: parsed }))
                       } catch (error) {
-                        setEvent(prev => ({ ...prev, pricing: e.target.value }));
+                        setEvent((prev) => ({ ...prev, pricing: e.target.value }))
                       }
-                    }} 
-                    required 
+                    }}
+                    required
                   />
-                  {typeof event.pricing === 'string' && (
-                    <p className="text-sm text-yellow-500">Warning: Current pricing is not valid JSON. Please correct it before submitting.</p>
+                  {typeof event.pricing === "string" && (
+                    <p className="text-sm text-yellow-500">
+                      Warning: Current pricing is not valid JSON. Please correct it before submitting.
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="visa">Visa</Label>
-                  <Select 
-                    name="visa" 
-                    value={event.visa} 
-                    onValueChange={(value) => setEvent(prev => ({ ...prev, visa: value }))}
-                  >
+                  <Select name="visa" value={event.visa} onValueChange={(value) => handleChange(value, "visa")}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select visa type" />
                     </SelectTrigger>
@@ -332,37 +314,37 @@ export default function CreateEventPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="descriptionTitle">Description Title</Label>
-                  <Input 
-                    id="descriptionTitle" 
-                    name="descriptionTitle" 
-                    value={event.descriptionTitle} 
-                    onChange={handleChange} 
-                    required 
-                    minLength={5} 
-                    maxLength={2000} 
+                  <Input
+                    id="descriptionTitle"
+                    name="descriptionTitle"
+                    value={event.descriptionTitle}
+                    onChange={handleChange}
+                    required
+                    minLength={5}
+                    maxLength={2000}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="importantNote">Important Note</Label>
-                  <Textarea 
-                    id="importantNote" 
-                    name="importantNote" 
-                    value={event.importantNote} 
-                    onChange={handleChange} 
-                    minLength={5} 
-                    maxLength={1000} 
+                  <Textarea
+                    id="importantNote"
+                    name="importantNote"
+                    value={event.importantNote}
+                    onChange={handleChange}
+                    minLength={5}
+                    maxLength={1000}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="month">Month</Label>
-                  <Input 
-                    id="month" 
-                    name="month" 
-                    value={event.month} 
-                    onChange={handleChange} 
-                    required 
-                    minLength={3} 
-                    maxLength={100} 
+                  <Input
+                    id="month"
+                    name="month"
+                    value={event.month}
+                    onChange={handleChange}
+                    required
+                    minLength={3}
+                    maxLength={100}
                   />
                 </div>
               </CardContent>
@@ -385,7 +367,7 @@ export default function CreateEventPage() {
                         <Input
                           id={`hotelName-${index}`}
                           value={hotel.name}
-                          onChange={(e) => handleHotelChange(index, 'name', e.target.value)}
+                          onChange={(e) => handleHotelChange(index, "name", e.target.value)}
                           required
                           minLength={3}
                           maxLength={100}
@@ -396,7 +378,7 @@ export default function CreateEventPage() {
                         <Input
                           id={`hotelLocation-${index}`}
                           value={hotel.location}
-                          onChange={(e) => handleHotelChange(index, 'location', e.target.value)}
+                          onChange={(e) => handleHotelChange(index, "location", e.target.value)}
                           required
                           minLength={3}
                           maxLength={100}
@@ -407,7 +389,7 @@ export default function CreateEventPage() {
                         <Textarea
                           id={`hotelDescription-${index}`}
                           value={hotel.description}
-                          onChange={(e) => handleHotelChange(index, 'description', e.target.value)}
+                          onChange={(e) => handleHotelChange(index, "description", e.target.value)}
                           required
                           minLength={10}
                           maxLength={1000}
@@ -418,13 +400,13 @@ export default function CreateEventPage() {
                         <div className="flex flex-col space-y-2">
                           <Input
                             id={`hotelImages-${index}`}
-                            value={hotel.images.filter(img => !img.startsWith('blob:')).join(',')}
+                            value={hotel.images.filter((img) => !img.startsWith("blob:")).join(",")}
                             onChange={(e) => {
-                              const imageArray = e.target.value.split(',').filter(url => url.trim() !== '');
-                              handleHotelChange(index, 'images', [
-                                ...(hotel.images || []).filter(img => img.startsWith('blob:')),
-                                ...imageArray
-                              ]);
+                              const imageArray = e.target.value.split(",").filter((url) => url.trim() !== "")
+                              handleHotelChange(index, "images", [
+                                ...(hotel.images || []).filter((img) => img.startsWith("blob:")),
+                                ...imageArray,
+                              ])
                             }}
                             placeholder="Enter image URLs separated by commas"
                           />
@@ -469,7 +451,7 @@ export default function CreateEventPage() {
                           <Input
                             id={`departureCity-${index}`}
                             value={flight.departureCity}
-                            onChange={(e) => handleFlightChange(index, 'departureCity', e.target.value)}
+                            onChange={(e) => handleFlightChange(index, "departureCity", e.target.value)}
                             required
                             minLength={2}
                             maxLength={100}
@@ -480,7 +462,7 @@ export default function CreateEventPage() {
                           <Input
                             id={`destinationCity-${index}`}
                             value={flight.destinationCity}
-                            onChange={(e) => handleFlightChange(index, 'destinationCity', e.target.value)}
+                            onChange={(e) => handleFlightChange(index, "destinationCity", e.target.value)}
                             required
                             minLength={2}
                             maxLength={100}
@@ -494,9 +476,9 @@ export default function CreateEventPage() {
                             id={`departureDate-${index}`}
                             type="date"
                             value={flight.departureDate}
-                            onChange={(e) => handleFlightChange(index, 'departureDate', e.target.value)}
+                            onChange={(e) => handleFlightChange(index, "departureDate", e.target.value)}
                             required
-                            min={new Date().toISOString().split('T')[0]}
+                            min={new Date().toISOString().split("T")[0]}
                           />
                         </div>
                         <div className="space-y-2">
@@ -505,7 +487,7 @@ export default function CreateEventPage() {
                             id={`returnDate-${index}`}
                             type="date"
                             value={flight.returnDate}
-                            onChange={(e) => handleFlightChange(index, 'returnDate', e.target.value)}
+                            onChange={(e) => handleFlightChange(index, "returnDate", e.target.value)}
                             required
                             min={flight.departureDate}
                           />
@@ -526,7 +508,9 @@ export default function CreateEventPage() {
             </Card>
           </TabsContent>
         </Tabs>
-        <Button type="submit" className="w-full">Create Event</Button>
+        <Button type="submit" className="w-full">
+          Create Event
+        </Button>
       </form>
     </div>
   )

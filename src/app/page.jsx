@@ -37,7 +37,7 @@ export default function HomePage() {
       </div>
       <Card className="w-[350px] bg-white bg-opacity-90 backdrop-blur-md">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">Welcome to Admin Dashboard</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Welcome to Dar el Mecca Admin Dashboard</CardTitle>
           <CardDescription className="text-center">
             Please log in to access the dashboard
           </CardDescription>
