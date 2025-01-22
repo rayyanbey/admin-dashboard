@@ -32,7 +32,7 @@ export default function ReviewsPage() {
 
   const fetchReviews = async () => {
     try {
-      const response = await axios.get('https://localhost:3000/pages/apis/reviews/getReviews');
+      const response = await axios.get('http://localhost:3000/pages/apis/reviews/getReviews');
       setReviews(response.data.data);
     } catch (error) {
       console.error('Error fetching reviews:', error);
@@ -47,7 +47,7 @@ export default function ReviewsPage() {
     formData.append('image', newReview.image);
 
     try {
-      await axios.post('https://localhost:3000/pages/apis/reviews/createReview', formData);
+      await axios.post('http://localhost:3000/pages/apis/reviews/createReview', formData);
       fetchReviews();
       setNewReview({ name: '', profession: '', review: '', image: null, rating: 1 });
     } catch (error) {
@@ -57,7 +57,7 @@ export default function ReviewsPage() {
 
   const handleDeleteReview = async (id) => {
     try {
-      await axios.post('https://localhost:3000/pages/apis/reviews/deleteReview', { id });
+      await axios.post('http://localhost:3000/pages/apis/reviews/deleteReview', { id });
       fetchReviews();
     } catch (error) {
       console.error('Error deleting review:', error);
@@ -66,7 +66,7 @@ export default function ReviewsPage() {
 
   const handleUpdateReview = async (id) => {
     try {
-      await axios.post('https://localhost:3000/pages/apis/reviews/updateReview', editingReview);
+      await axios.post('http://localhost:3000/pages/apis/reviews/updateReview', editingReview);
       fetchReviews();
       setEditingReviewId(null);
     } catch (error) {
@@ -114,6 +114,16 @@ export default function ReviewsPage() {
           onChange={(e) => setNewReview({ ...newReview, review: e.target.value })}
           className="max-w-sm"
         />
+        <Input
+          placeholder="Rating"
+          type="number"
+          value={newReview.rating}
+          onChange={(e) => {
+            const rating = Math.min(5, Math.max(1, e.target.value));
+            setNewReview({ ...newReview, rating });
+          }}
+          className="max-w-sm"
+        />
         <input type="file" accept="image/*" onChange={handleImageUpload} className="block max-w-sm" />
         <Button onClick={handleAddReview}>Add Review</Button>
       </div>
@@ -121,6 +131,7 @@ export default function ReviewsPage() {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Id</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Profession</TableHead>
             <TableHead>Review</TableHead>
@@ -142,7 +153,7 @@ export default function ReviewsPage() {
                 <Button onClick={() => handleDeleteReview(review.id)} variant="destructive">
                   Delete
                 </Button>
-                <Button onClick={()=> handleUpdateReview(review.id)} variant="primary">
+                <Button onClick={() => handleUpdateReview(review.id)} variant="primary">
                   Edit
                 </Button>
               </TableCell>
