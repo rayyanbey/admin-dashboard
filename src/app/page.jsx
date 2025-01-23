@@ -1,22 +1,28 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import Logo from '@/components/Logo'
+import { useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Logo from '@/components/Logo';
 
 export default function HomePage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (session) {
+      router.push('/dashboard');
+    }
+  }, [session, router]);
 
   if (status === 'loading') {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   if (session) {
-    router.push('/dashboard')
-    return null
+    return null;
   }
 
   return (
@@ -37,7 +43,9 @@ export default function HomePage() {
       </div>
       <Card className="w-[350px] bg-white bg-opacity-90 backdrop-blur-md">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">Welcome to Dar el Mecca Admin Dashboard</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">
+            Welcome to Dar el Mecca Admin Dashboard
+          </CardTitle>
           <CardDescription className="text-center">
             Please log in to access the dashboard
           </CardDescription>
@@ -49,6 +57,5 @@ export default function HomePage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
-
