@@ -33,6 +33,7 @@ export default function ReviewsPage() {
   const fetchReviews = async () => {
     try {
       const response = await axios.get('http://localhost:3000/pages/apis/reviews/getReviews');
+      console.log(response.data.data);
       setReviews(response.data.data);
     } catch (error) {
       console.error('Error fetching reviews:', error);

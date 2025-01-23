@@ -196,6 +196,7 @@ export default function CreateEventPage() {
                       multiple
                       onChange={(e) => handleImageUpload(e, "images")}
                     />
+                    <p className="text-sm text-gray-500">{event.images.length} image(s) selected</p>
                   </div>
                   {event.images.length < 3 && (
                     <p className="text-sm text-red-500">At least three images are required.</p>
@@ -258,6 +259,7 @@ export default function CreateEventPage() {
                         multiple
                         onChange={(e) => handleImageUpload(e, "posters")}
                       />
+                      <p className="text-sm text-gray-500">{event.posters.length} poster(s) selected</p>
                     </div>
                     {event.posters.length === 0 && (
                       <p className="text-sm text-red-500">At least one poster is required.</p>
@@ -396,27 +398,16 @@ export default function CreateEventPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor={`hotelImages-${index}`}>Images (URLs or upload)</Label>
+                        <Label htmlFor={`hotelImages-${index}`}>Images (upload from device)</Label>
                         <div className="flex flex-col space-y-2">
                           <Input
                             id={`hotelImages-${index}`}
-                            value={hotel.images.filter((img) => !img.startsWith("blob:")).join(",")}
-                            onChange={(e) => {
-                              const imageArray = e.target.value.split(",").filter((url) => url.trim() !== "")
-                              handleHotelChange(index, "images", [
-                                ...(hotel.images || []).filter((img) => img.startsWith("blob:")),
-                                ...imageArray,
-                              ])
-                            }}
-                            placeholder="Enter image URLs separated by commas"
-                          />
-                          <Input
-                            id={`hotelImageUpload-${index}`}
                             type="file"
                             accept="image/*"
                             multiple
                             onChange={(e) => handleHotelImageUpload(index, e)}
                           />
+                          <p className="text-sm text-gray-500">{hotel.images.length} image(s) selected</p>
                         </div>
                       </div>
                     </CardContent>
