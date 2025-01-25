@@ -14,9 +14,9 @@ export default function CompanyInfoPage() {
     const fetchData = async () => {
       try {
         const [contactRes, addressRes, hoursRes] = await Promise.all([
-          axios.get("https://localhost:3000/api/company/getContactInfo"),
-          axios.get("https://localhost:3000/api/company/getAddress"),
-          axios.get("https://localhost:3000/api/company/getBusinessHours"),
+          axios.get("http://localhost:3000/api/company/getContactInfo"),
+          axios.get("http://localhost:3000/api/company/getAddress"),
+          axios.get("http://localhost:3000/api/company/getBusinessHours"),
         ]);
 
         setInfo({
