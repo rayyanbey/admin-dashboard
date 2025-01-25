@@ -8,22 +8,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Logo from '@/components/Logo';
 
 export default function HomePage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  // const { data: session, status } = useSession();
+   const router = useRouter();
 
-  useEffect(() => {
-    if (session) {
-      router.push('/dashboard');
-    }
-  }, [session, router]);
+  // useEffect(() => {
+  //   if (session) {
+  //     router.push('/dashboard');
+  //   }
+  // }, [session, router]);
 
-  if (status === 'loading') {
-    return <div>Loading...</div>;
-  }
+  // // useEffect(()=>{
+  // //   router.push('/dashboard')
+  // // })
 
-  if (session) {
-    return null;
-  }
+  // if (status === 'loading') {
+  //   return <div>Loading...</div>;
+  // }
+
+  // if (session) {
+  //   return null;
+  //}
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-400">
@@ -51,7 +55,7 @@ export default function HomePage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center">
-          <Button onClick={() => router.push('/login')} className="w-full">
+          <Button onClick={() => router.push('/dashboard')} className="w-full">
             Log In
           </Button>
         </CardContent>
