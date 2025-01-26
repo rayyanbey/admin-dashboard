@@ -11,6 +11,8 @@ const sidebarItems = [
   { name: 'Company Info', href: '/dashboard/company', icon: Building },
 ]
 
+
+
 export default function Sidebar() {
   const pathname = usePathname()
 
@@ -18,6 +20,7 @@ export default function Sidebar() {
     <div className="bg-white w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out">
       <nav>
         {sidebarItems.map((item) => (
+
           <Link
             key={item.name}
             href={item.href}

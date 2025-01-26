@@ -1,23 +1,55 @@
-'use client'
+"use client"
 
-import { useState, useEffect } from "react";
-import axios from "axios";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, MapPin, Phone, Mail, FileText, Printer, MessageCircle } from "lucide-react";
+import { useState, useEffect } from "react"
+import { formatTime12Hour, formatTime24Hour } from "@/lib/time"
+import axios from "axios"
+import { motion } from "framer-motion"
+import { toast } from "sonner"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import {
+  Clock,
+  MapPin,
+  Phone,
+  Mail,
+  FileText,
+  Printer,
+  MessageCircle,
+  Plus,
+  X,
+  Check,
+  ChevronDown,
+  Loader2,
+} from "lucide-react"
+
+const Section = ({ title, icon, children }) => (
+  <div className="space-y-4">
+    <div className="flex items-center gap-2 mb-4">
+      <div className="p-2 rounded-full bg-primary/10">{icon}</div>
+      <h2 className="text-xl font-semibold">{title}</h2>
+    </div>
+    <div className="grid gap-4 md:grid-cols-2">{children}</div>
+  </div>
+)
 
 export default function CompanyInfoPage() {
-  const [info, setInfo] = useState(null);
-  const [editField, setEditField] = useState(null);
-  const [tempData, setTempData] = useState("");
+  const [info, setInfo] = useState(null)
+  const [editField, setEditField] = useState(null)
+  const [tempData, setTempData] = useState("")
+  const [validationError, setValidationError] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [contactRes, addressRes, hoursRes] = await Promise.all([
-          axios.get("http://localhost:3000/api/company/getContactInfo"),
-          axios.get("http://localhost:3000/api/company/getAddress"),
-          axios.get("http://localhost:3000/api/company/getBusinessHours"),
-        ]);
+          axios.get("http://localhost:3000/pages/apis/company/getContactInfo"),
+          axios.get("http://localhost:3000/pages/apis/company/getAddress"),
+          axios.get("http://localhost:3000/pages/apis/company/getBusinessHours"),
+        ])
 
         setInfo({
           address: addressRes.data.data[0].address,
@@ -26,97 +58,443 @@ export default function CompanyInfoPage() {
           phoneNumbers: contactRes.data.data[0].phoneNumbers,
           faxNumbers: contactRes.data.data[0].faxNumbers,
           email: contactRes.data.data[0].email,
-          businessHours: hoursRes.data.data,
-        });
+          businessHours: hoursRes.data.data[0],
+        })
       } catch (error) {
-        console.error("Error fetching company data", error);
+        toast.error("Failed to load company data")
+        console.error("Error fetching data:", error)
       }
-    };
+    }
 
-    fetchData();
-  }, []);
+    fetchData()
 
-  const handleEdit = (field) => {
-    setEditField(field);
-    setTempData(info[field]);
-  };
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") setEditField(null)
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [])
+
+  // Array field handlers
+  const handleArrayChange = (index, value) => {
+    const newArray = [...tempData]
+    newArray[index] = value
+    setTempData(newArray)
+  }
+
+  const addArrayItem = () => setTempData([...tempData, ""])
+  const removeArrayItem = (index) => setTempData(tempData.filter((_, i) => i !== index))
+
+  // Validation functions
+  const validateEmails = (emails) => emails.every((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))
+  const validatePhones = (phones) => phones.every((p) => /^\+?[0-9\-\s()]+$/.test(p))
 
   const handleSave = async (field) => {
     try {
-      let updatedData = { [field]: tempData };
-      let endpoint = "";
-      if (field === "businessHours") endpoint = "updateBusinessHours";
-      else if (field === "phoneNumbers" || field === "email" || field === "faxNumbers") endpoint = "updateContactInfo";
-      else if (field === "address" || field === "documentAddress" || field === "whatsapp") endpoint = "updateAddress";
+      setIsSaving(true)
+      // Validation
+      if (field === "email" && !validateEmails(tempData)) {
+        setValidationError("Invalid email format")
+        return
+      }
+      if ((field === "phoneNumbers" || field === "faxNumbers") && !validatePhones(tempData)) {
+        setValidationError("Invalid phone number format")
+        return
+      }
 
-      await axios.post(`https://localhost:3000/api/company/${endpoint}`, updatedData);
-      setInfo({ ...info, [field]: tempData });
+      if (!window.confirm("Are you sure you want to save these changes?")) return
+
+      let payload
+      const endpoint = {
+        businessHours: "updateBusinessHours",
+        phoneNumbers: "updateContactInfo",
+        email: "updateContactInfo",
+        faxNumbers: "updateContactInfo",
+        address: "updateAddress",
+        documentAddress: "updateAddress",
+        whatsapp: "updateAddress",
+      }[field]
+
+      console.log("Endpoint", endpoint)
+      console.log("Field", field)
+      console.log("TempData", tempData)
+
+      if (endpoint === "updateContactInfo") {
+        payload = {
+          phoneNumbers: info.phoneNumbers,
+          email: info.email,
+          faxNumbers: info.faxNumbers,
+          [field]: tempData, // Override only the changed field
+        }
+      } else if (endpoint === "updateAddress") {
+        payload = {
+          address: info.address,
+          documentAddress: info.documentAddress,
+          whatsapp: info.whatsapp,
+          [field]: tempData, // Override only the changed field
+        }
+      } else if (endpoint === "updateBusinessHours") {
+        payload = {
+          days: {
+            ...info.businessHours,
+            ...tempData,
+          },
+        }
+      }
+
+      console.log("Payload", payload)
+      await axios.put(`http://localhost:3000/pages/apis/company/${endpoint}`, payload)
+      setInfo((prev) => ({
+        ...prev,
+        ...(endpoint === "updateContactInfo"
+          ? {
+              phoneNumbers: payload.phoneNumbers,
+              email: payload.email,
+              faxNumbers: payload.faxNumbers,
+            }
+          : {}),
+        ...(endpoint === "updateAddress"
+          ? {
+              address: payload.address,
+              documentAddress: payload.documentAddress,
+              whatsapp: payload.whatsapp,
+            }
+          : {}),
+        ...(endpoint === "updateBusinessHours"
+          ? {
+              businessHours: payload.days,
+            }
+          : {}),
+        [field]: tempData,
+      }))
+
+      toast.success("Changes saved successfully")
     } catch (error) {
-      console.error("Error updating data", error);
+      toast.error("Failed to save changes")
+      console.error("Update error:", error)
+    } finally {
+      setIsSaving(false)
+      setEditField(null)
     }
+  }
 
-    setEditField(null);
-  };
+  // Business hours presets
+  const applyHourPreset = (preset) => {
+    const presetHours = {
+      standard: Object.fromEntries(
+        ["monday", "tuesday", "wednesday", "thursday", "friday"].map((day) => [
+          day,
+          { open: true, openingTime: "09:00 AM", closingTime: "05:00 PM" },
+        ]),
+      ),
+      "24/7": Object.fromEntries(
+        Object.keys(info.businessHours).map((day) => [
+          day,
+          { open: true, openingTime: "12:00 AM", closingTime: "11:59 PM" },
+        ]),
+      ),
+      "weekends-closed": {
+        ...info.businessHours,
+        saturday: { open: false, openingTime: null, closingTime: null },
+        sunday: { open: false, openingTime: null, closingTime: null },
+      },
+    }
+    setTempData({ ...info.businessHours, ...presetHours[preset] })
+  }
 
-  const handleInputChange = (e) => {
-    setTempData(e.target.value);
-  };
-
-  if (!info) return <p>Loading...</p>;
+  if (!info)
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Company Information</h1>
-      <div className="grid gap-4 md:grid-cols-2">
-        {Object.entries(info).map(([key, value]) => {
-          if (key === "businessHours") return null;
-          return (
-            <Card key={key}>
-              <CardHeader className="flex justify-between items-center">
-                <CardTitle className="flex items-center">
-                  {key === "address" && <MapPin className="mr-2 h-4 w-4" />}
-                  {key === "documentAddress" && <FileText className="mr-2 h-4 w-4" />}
-                  {key === "whatsapp" && <MessageCircle className="mr-2 h-4 w-4" />}
-                  {key === "phoneNumbers" && <Phone className="mr-2 h-4 w-4" />}
-                  {key === "faxNumbers" && <Printer className="mr-2 h-4 w-4" />}
-                  {key === "email" && <Mail className="mr-2 h-4 w-4" />}
-                  {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
-                </CardTitle>
-                <button
-                  className="text-sm text-blue-500"
-                  onClick={() => handleEdit(key)}
-                >
-                  Edit
-                </button>
-              </CardHeader>
-              <CardContent>
-                {editField === key ? (
-                  <>
-                    <input
-                      type="text"
-                      value={tempData}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded"
-                    />
-                    <button
-                      className="mt-2 text-sm text-green-500"
-                      onClick={() => handleSave(key)}
-                    >
-                      Save
-                    </button>
-                  </>
-                ) : (
-                  Array.isArray(value) ? (
-                    value.map((item, index) => <div key={index}>{item}</div>)
-                  ) : (
-                    value
-                  )
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+    <div className="p-6 space-y-8 max-w-6xl mx-auto">
+      <h1 className="text-3xl font-bold">Company Information</h1>
+
+      <Section title="Contact Details" icon={<Phone size={20} />}>
+        {["phoneNumbers", "email", "faxNumbers"].map((field) => (
+          <Card key={field}>
+            <CardHeader className="flex justify-between items-center">
+              <CardTitle className="flex items-center gap-2">
+                {
+                  {
+                    phoneNumbers: <Phone size={18} />,
+                    email: <Mail size={18} />,
+                    faxNumbers: <Printer size={18} />,
+                  }[field]
+                }
+                {field.replace(/([A-Z])/g, " $1")}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setEditField(field)
+                  setTempData(info[field])
+                }}
+              >
+                Edit
+              </Button>
+            </CardHeader>
+
+            <CardContent>
+              {editField === field ? (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <div className="space-y-2">
+                    {tempData.map((item, i) => (
+                      <div key={i} className="flex gap-2">
+                        <Input value={item} onChange={(e) => handleArrayChange(i, e.target.value)} />
+                        <Button variant="outline" size="icon" onClick={() => removeArrayItem(i)}>
+                          <X size={16} />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button variant="outline" onClick={addArrayItem}>
+                      <Plus size={16} className="mr-2" /> Add New
+                    </Button>
+                    {validationError && <p className="text-red-500 text-sm">{validationError}</p>}
+                    <div className="flex gap-2 mt-4">
+                      <Button onClick={() => handleSave(field)} disabled={isSaving}>
+                        {isSaving ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Check size={16} className="mr-2" />
+                        )}
+                        {isSaving ? "Saving..." : "Save"}
+                      </Button>
+                      <Button variant="outline" onClick={() => setEditField(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <div className="space-y-1.5">
+                  {info[field].map((item, i) => (
+                    <div key={i} className="text-sm">
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </Section>
+
+      <Section title="Address Information" icon={<MapPin size={20} />}>
+        {["address", "documentAddress", "whatsapp"].map((field) => (
+          <Card key={field}>
+            <CardHeader className="flex justify-between items-center">
+              <CardTitle className="flex items-center gap-2">
+                {
+                  {
+                    address: <MapPin size={18} />,
+                    documentAddress: <FileText size={18} />,
+                    whatsapp: <MessageCircle size={18} />,
+                  }[field]
+                }
+                {field.replace(/([A-Z])/g, " $1")}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setEditField(field)
+                  setTempData(info[field])
+                }}
+              >
+                Edit
+              </Button>
+            </CardHeader>
+
+            <CardContent>
+              {editField === field ? (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <Input value={tempData} onChange={(e) => setTempData(e.target.value)} />
+                  <div className="flex gap-2 mt-4">
+                    <Button onClick={() => handleSave(field)} disabled={isSaving}>
+                      {isSaving ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check size={16} className="mr-2" />
+                      )}
+                      {isSaving ? "Saving..." : "Save"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setEditField(null)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </motion.div>
+              ) : (
+                <div className="text-sm">{info[field]}</div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </Section>
+
+      <Section title="Business Hours" icon={<Clock size={20} />}>
+        <Card>
+          <CardHeader className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <Clock size={18} />
+              Operating Hours
+            </CardTitle>
+            <div className="flex gap-2">
+              <Select onValueChange={applyHourPreset}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Presets" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">Standard Hours</SelectItem>
+                  <SelectItem value="24/7">24/7</SelectItem>
+                  <SelectItem value="weekends-closed">Weekends Closed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setEditField("businessHours")
+                  setTempData(info.businessHours)
+                }}
+              >
+                Edit
+              </Button>
+            </div>
+          </CardHeader>
+
+          <CardContent>
+            {editField === "businessHours" ? (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                <div className="overflow-x-auto">
+                  <table className="min-w-[600px]">
+                    <thead>
+                      <tr>
+                        <th className="text-left pb-2">Day</th>
+                        <th className="text-left pb-2">Status</th>
+                        <th className="text-left pb-2">Opening Time</th>
+                        <th className="text-left pb-2">Closing Time</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(tempData).map(([day, details]) => {
+                        if (["id", "createdAt", "updatedAt", "companyId"].includes(day)) return null
+
+                        return (
+                          <tr key={day} className="border-t">
+                            <td className="py-3 capitalize">{day}</td>
+                            <td>
+                              <Label className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={details.open}
+                                  onChange={(e) =>
+                                    setTempData((prev) => ({
+                                      ...prev,
+                                      [day]: {
+                                        ...details,
+                                        open: e.target.checked,
+                                      },
+                                    }))
+                                  }
+                                />
+                                {details.open ? "Open" : "Closed"}
+                              </Label>
+                            </td>
+                            <td>
+                              <Input
+                                type="time"
+                                value={details.openingTime ? formatTime24Hour(details.openingTime) : ""}
+                                onChange={(e) =>
+                                  setTempData((prev) => ({
+                                    ...prev,
+                                    [day]: {
+                                      ...details,
+                                      openingTime: formatTime12Hour(e.target.value),
+                                    },
+                                  }))
+                                }
+                                disabled={!details.open}
+                              />
+                            </td>
+                            <td>
+                              <Input
+                                type="time"
+                                value={details.closingTime ? formatTime24Hour(details.closingTime) : ""}
+                                onChange={(e) =>
+                                  setTempData((prev) => ({
+                                    ...prev,
+                                    [day]: {
+                                      ...details,
+                                      closingTime: formatTime12Hour(e.target.value),
+                                    },
+                                  }))
+                                }
+                                disabled={!details.open}
+                              />
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={() => handleSave("businessHours")} disabled={isSaving}>
+                    {isSaving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check size={16} className="mr-2" />
+                    )}
+                    {isSaving ? "Saving..." : "Save All"}
+                  </Button>
+                  <Button variant="outline" onClick={() => setEditField(null)}>
+                    Cancel
+                  </Button>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-[600px]">
+                  <thead>
+                    <tr>
+                      <th className="text-left pb-2">Day</th>
+                      <th className="text-left pb-2">Status</th>
+                      <th className="text-left pb-2">Hours</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(info.businessHours).map(([day, details]) => {
+                      if (["id", "createdAt", "updatedAt", "companyId"].includes(day)) return null
+
+                      return (
+                        <tr key={day} className="border-t">
+                          <td className="py-3 capitalize">{day}</td>
+                          <td>
+                            <span
+                              className={`px-2 py-1 rounded-full text-sm ${
+                                details.open ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {details.open ? "Open" : "Closed"}
+                            </span>
+                          </td>
+                          <td>{details.open ? `${details.openingTime} - ${details.closingTime}` : "Closed"}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </Section>
     </div>
-  );
+  )
 }
+
