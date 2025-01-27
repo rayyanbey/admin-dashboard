@@ -1,14 +1,26 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PlusCircle, X } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlusCircle, X } from "lucide-react";
 
 export default function CreateEventPage() {
   const [event, setEvent] = useState({
@@ -30,66 +42,90 @@ export default function CreateEventPage() {
       hotels: [],
     },
     flights: [],
-  })
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e, name = null) => {
     if (name) {
       // This is for the Select component
-      setEvent((prev) => ({ ...prev, [name]: e }))
+      setEvent((prev) => ({ ...prev, [name]: e }));
     } else {
       // This is for regular input fields
-      const { name, value } = e.target
-      setEvent((prev) => ({ ...prev, [name]: value }))
+      const { name, value } = e.target;
+      setEvent((prev) => ({ ...prev, [name]: value }));
     }
-  }
+  };
 
   const handleImageUpload = (e, field) => {
-    const files = Array.from(e.target.files)
+    const files = Array.from(e.target.files);
     setEvent((prev) => ({
       ...prev,
       [`${field}Files`]: [...(prev[`${field}Files`] || []), ...files],
-      [field]: [...(prev[field] || []), ...files.map((file) => URL.createObjectURL(file))],
-    }))
-  }
+      [field]: [
+        ...(prev[field] || []),
+        ...files.map((file) => URL.createObjectURL(file)),
+      ],
+    }));
+  };
 
   const handleHotelChange = (index, field, value) => {
     setEvent((prev) => {
-      const newHotels = [...prev.eventDetails.hotels]
-      newHotels[index] = { ...newHotels[index], [field]: value }
-      return { ...prev, eventDetails: { ...prev.eventDetails, hotels: newHotels } }
-    })
-  }
+      const newHotels = [...prev.eventDetails.hotels];
+      newHotels[index] = { ...newHotels[index], [field]: value };
+      return {
+        ...prev,
+        eventDetails: { ...prev.eventDetails, hotels: newHotels },
+      };
+    });
+  };
 
   const handleHotelImageUpload = (index, e) => {
-    const files = Array.from(e.target.files)
+    const files = Array.from(e.target.files);
     setEvent((prev) => {
-      const newHotels = [...prev.eventDetails.hotels]
+      const newHotels = [...prev.eventDetails.hotels];
       newHotels[index] = {
         ...newHotels[index],
         imageFiles: [...(newHotels[index].imageFiles || []), ...files],
-        images: [...(newHotels[index].images || []), ...files.map((file) => URL.createObjectURL(file))],
-      }
-      return { ...prev, eventDetails: { ...prev.eventDetails, hotels: newHotels } }
-    })
-  }
+        images: [
+          ...(newHotels[index].images || []),
+          ...files.map((file) => URL.createObjectURL(file)),
+        ],
+      };
+      return {
+        ...prev,
+        eventDetails: { ...prev.eventDetails, hotels: newHotels },
+      };
+    });
+  };
 
   const handleFlightChange = (index, field, value) => {
     setEvent((prev) => {
-      const newFlights = [...prev.flights]
-      newFlights[index] = { ...newFlights[index], [field]: value }
-      return { ...prev, flights: newFlights }
-    })
-  }
+      const newFlights = [...prev.flights];
+      newFlights[index] = { ...newFlights[index], [field]: value };
+      return { ...prev, flights: newFlights };
+    });
+  };
 
   const addHotel = () => {
     setEvent((prev) => ({
       ...prev,
       eventDetails: {
         ...prev.eventDetails,
-        hotels: [...prev.eventDetails.hotels, { name: "", location: "", description: "", images: [], imageFiles: [] }],
+        hotels: [
+          ...prev.eventDetails.hotels,
+          {
+            name: "",
+            location: "",
+            description: "",
+            images: [],
+            imageFiles: [],
+          },
+        ],
       },
-    }))
-  }
+    }));
+  };
 
   const removeHotel = (index) => {
     setEvent((prev) => ({
@@ -98,62 +134,151 @@ export default function CreateEventPage() {
         ...prev.eventDetails,
         hotels: prev.eventDetails.hotels.filter((_, i) => i !== index),
       },
-    }))
-  }
+    }));
+  };
 
   const addFlight = () => {
     setEvent((prev) => ({
       ...prev,
-      flights: [...prev.flights, { departureCity: "", destinationCity: "", departureDate: "", returnDate: "" }],
-    }))
-  }
+      flights: [
+        ...prev.flights,
+        {
+          departureCity: "",
+          destinationCity: "",
+          departureDate: "",
+          returnDate: "",
+        },
+      ],
+    }));
+  };
 
   const removeFlight = (index) => {
     setEvent((prev) => ({
       ...prev,
       flights: prev.flights.filter((_, i) => i !== index),
-    }))
-  }
+    }));
+  };
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    const formData = new FormData()
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    // Append event data
-    Object.keys(event).forEach((key) => {
-      if (key !== "imageFiles" && key !== "posterFiles" && key !== "eventDetails" && key !== "flights") {
-        formData.append(key, JSON.stringify(event[key]))
+    // Validate required fields
+    if (
+      !event.title ||
+      !event.description ||
+      !event.type ||
+      !event.duration ||
+      !event.pricing ||
+      !event.visa ||
+      !event.descriptionTitle ||
+      !event.month
+    ) {
+      setError("Missing required fields");
+      setLoading(false);
+      return;
+    }
+
+    // Validate event images
+    if (event.images.length < 3) {
+      setError("At least three event images are required");
+      setLoading(false);
+      return;
+    }
+
+    // Validate posters for Hajj events
+    if (event.type === "H" && event.posters.length === 0) {
+      setError("Posters are required for Hajj events");
+      setLoading(false);
+      return;
+    }
+
+    // Validate country for tour packages
+    if (event.type === "T" && !event.countryName) {
+      setError("Country name is required for tour packages");
+      setLoading(false);
+      return;
+    }
+
+    // Validate flight dates
+    if (
+      event.flights.some(
+        (flight) =>
+          new Date(flight.returnDate) <= new Date(flight.departureDate)
+      )
+    ) {
+      setError("Return date must be after departure date");
+      setLoading(false);
+      return;
+    }
+
+    // Prepare form data
+    const formData = new FormData();
+
+    // Append basic fields
+    formData.append("title", event.title);
+    formData.append("description", event.description);
+    formData.append("type", event.type);
+    formData.append("duration", event.duration);
+    formData.append("pricing", JSON.stringify(event.pricing));
+    formData.append("visa", event.visa);
+    formData.append("descriptionTitle", event.descriptionTitle);
+    formData.append("countryName", event.countryName);
+    formData.append("importantNote", event.importantNote);
+    formData.append("month", event.month);
+
+    // Append event images
+    event.imageFiles.forEach((file) => formData.append("images", file));
+
+    // Append posters for Hajj events
+    if (event.type === "H") {
+      event.posterFiles.forEach((file) => formData.append("posters", file));
+    }
+
+    // Append hotels
+    formData.append("hotels", JSON.stringify(event.eventDetails.hotels));
+    event.eventDetails.hotels.forEach((hotel, index) => {
+      hotel.imageFiles.forEach((file) =>
+        formData.append(`hotelImages[${index}]`, file)
+      );
+    });
+
+    // Append flights
+    formData.append("flightDetails", JSON.stringify(event.flights[0])); // Assuming only one flight for simplicity
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_HOST_NAME}/pages/apis/events/createEvent`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert("Event created successfully!");
+        // Reset form or redirect
+      } else {
+        setError(
+          result.message || "An error occurred while creating the event"
+        );
       }
-    })
-
-    // Append image files
-    event.imageFiles.forEach((file, index) => {
-      formData.append(`image-${index}`, file)
-    })
-
-    // Append poster files
-    event.posterFiles.forEach((file, index) => {
-      formData.append(`poster-${index}`, file)
-    })
-
-    // Append hotel data and files
-    event.eventDetails.hotels.forEach((hotel, hotelIndex) => {
-      formData.append(`hotel-${hotelIndex}`, JSON.stringify(hotel))
-      hotel.imageFiles.forEach((file, fileIndex) => {
-        formData.append(`hotel-${hotelIndex}-image-${fileIndex}`, file)
-      })
-    })
-
-    // Append flight data
-    formData.append("flights", JSON.stringify(event.flights))
-
-    // Here you would typically send the formData to your backend
-    console.log("Form data to be sent:", formData)
-  }
+    } catch (error) {
+      setError("An error occurred while submitting the form");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col space-y-6 w-full">
-      <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Create New Event</h1>
+      <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+        Create New Event
+      </h1>
+      {error && <p className="text-red-500">{error}</p>}
       <form onSubmit={handleSubmit} className="space-y-6">
         <Tabs defaultValue="event" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
@@ -185,7 +310,9 @@ export default function CreateEventPage() {
                     <Input
                       id="images"
                       name="images"
-                      value={event.images.filter((img) => !img.startsWith("blob:")).join(",")}
+                      value={event.images
+                        .filter((img) => !img.startsWith("blob:"))
+                        .join(",")}
                       onChange={handleChange}
                       placeholder="Enter image URLs separated by commas"
                     />
@@ -196,10 +323,14 @@ export default function CreateEventPage() {
                       multiple
                       onChange={(e) => handleImageUpload(e, "images")}
                     />
-                    <p className="text-sm text-gray-500">{event.images.length} image(s) selected</p>
+                    <p className="text-sm text-gray-500">
+                      {event.images.length} image(s) selected
+                    </p>
                   </div>
                   {event.images.length < 3 && (
-                    <p className="text-sm text-red-500">At least three images are required.</p>
+                    <p className="text-sm text-red-500">
+                      At least three images are required.
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -216,7 +347,11 @@ export default function CreateEventPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="type">Type</Label>
-                  <Select name="type" value={event.type} onValueChange={(value) => handleChange(value, "type")}>
+                  <Select
+                    name="type"
+                    value={event.type}
+                    onValueChange={(value) => handleChange(value, "type")}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select event type" />
                     </SelectTrigger>
@@ -243,12 +378,16 @@ export default function CreateEventPage() {
                 )}
                 {event.type === "H" && (
                   <div className="space-y-2">
-                    <Label htmlFor="posters">Posters (URLs or upload, at least 1 required)</Label>
+                    <Label htmlFor="posters">
+                      Posters (URLs or upload, at least 1 required)
+                    </Label>
                     <div className="flex flex-col space-y-2">
                       <Input
                         id="posters"
                         name="posters"
-                        value={event.posters.filter((poster) => !poster.startsWith("blob:")).join(",")}
+                        value={event.posters
+                          .filter((poster) => !poster.startsWith("blob:"))
+                          .join(",")}
                         onChange={handleChange}
                         placeholder="Enter poster URLs separated by commas"
                       />
@@ -259,10 +398,14 @@ export default function CreateEventPage() {
                         multiple
                         onChange={(e) => handleImageUpload(e, "posters")}
                       />
-                      <p className="text-sm text-gray-500">{event.posters.length} poster(s) selected</p>
+                      <p className="text-sm text-gray-500">
+                        {event.posters.length} poster(s) selected
+                      </p>
                     </div>
                     {event.posters.length === 0 && (
-                      <p className="text-sm text-red-500">At least one poster is required.</p>
+                      <p className="text-sm text-red-500">
+                        At least one poster is required.
+                      </p>
                     )}
                   </div>
                 )}
@@ -284,26 +427,38 @@ export default function CreateEventPage() {
                   <Textarea
                     id="pricing"
                     name="pricing"
-                    value={typeof event.pricing === "object" ? JSON.stringify(event.pricing, null, 2) : event.pricing}
+                    value={
+                      typeof event.pricing === "object"
+                        ? JSON.stringify(event.pricing, null, 2)
+                        : event.pricing
+                    }
                     onChange={(e) => {
                       try {
-                        const parsed = JSON.parse(e.target.value)
-                        setEvent((prev) => ({ ...prev, pricing: parsed }))
+                        const parsed = JSON.parse(e.target.value);
+                        setEvent((prev) => ({ ...prev, pricing: parsed }));
                       } catch (error) {
-                        setEvent((prev) => ({ ...prev, pricing: e.target.value }))
+                        setEvent((prev) => ({
+                          ...prev,
+                          pricing: e.target.value,
+                        }));
                       }
                     }}
                     required
                   />
                   {typeof event.pricing === "string" && (
                     <p className="text-sm text-yellow-500">
-                      Warning: Current pricing is not valid JSON. Please correct it before submitting.
+                      Warning: Current pricing is not valid JSON. Please correct
+                      it before submitting.
                     </p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="visa">Visa</Label>
-                  <Select name="visa" value={event.visa} onValueChange={(value) => handleChange(value, "visa")}>
+                  <Select
+                    name="visa"
+                    value={event.visa}
+                    onValueChange={(value) => handleChange(value, "visa")}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select visa type" />
                     </SelectTrigger>
@@ -361,7 +516,9 @@ export default function CreateEventPage() {
                 {event.eventDetails.hotels.map((hotel, index) => (
                   <Card key={index}>
                     <CardHeader>
-                      <CardTitle className="text-lg">Hotel {index + 1}</CardTitle>
+                      <CardTitle className="text-lg">
+                        Hotel {index + 1}
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
@@ -369,36 +526,52 @@ export default function CreateEventPage() {
                         <Input
                           id={`hotelName-${index}`}
                           value={hotel.name}
-                          onChange={(e) => handleHotelChange(index, "name", e.target.value)}
+                          onChange={(e) =>
+                            handleHotelChange(index, "name", e.target.value)
+                          }
                           required
                           minLength={3}
                           maxLength={100}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor={`hotelLocation-${index}`}>Location</Label>
+                        <Label htmlFor={`hotelLocation-${index}`}>
+                          Location
+                        </Label>
                         <Input
                           id={`hotelLocation-${index}`}
                           value={hotel.location}
-                          onChange={(e) => handleHotelChange(index, "location", e.target.value)}
+                          onChange={(e) =>
+                            handleHotelChange(index, "location", e.target.value)
+                          }
                           required
                           minLength={3}
                           maxLength={100}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor={`hotelDescription-${index}`}>Description</Label>
+                        <Label htmlFor={`hotelDescription-${index}`}>
+                          Description
+                        </Label>
                         <Textarea
                           id={`hotelDescription-${index}`}
                           value={hotel.description}
-                          onChange={(e) => handleHotelChange(index, "description", e.target.value)}
+                          onChange={(e) =>
+                            handleHotelChange(
+                              index,
+                              "description",
+                              e.target.value
+                            )
+                          }
                           required
                           minLength={10}
                           maxLength={1000}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor={`hotelImages-${index}`}>Images (upload from device)</Label>
+                        <Label htmlFor={`hotelImages-${index}`}>
+                          Images (upload from device)
+                        </Label>
                         <div className="flex flex-col space-y-2">
                           <Input
                             id={`hotelImages-${index}`}
@@ -407,12 +580,18 @@ export default function CreateEventPage() {
                             multiple
                             onChange={(e) => handleHotelImageUpload(index, e)}
                           />
-                          <p className="text-sm text-gray-500">{hotel.images.length} image(s) selected</p>
+                          <p className="text-sm text-gray-500">
+                            {hotel.images.length} image(s) selected
+                          </p>
                         </div>
                       </div>
                     </CardContent>
                     <CardFooter>
-                      <Button type="button" variant="destructive" onClick={() => removeHotel(index)}>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={() => removeHotel(index)}
+                      >
                         Remove Hotel
                       </Button>
                     </CardFooter>
@@ -433,27 +612,45 @@ export default function CreateEventPage() {
                 {event.flights.map((flight, index) => (
                   <Card key={index}>
                     <CardHeader>
-                      <CardTitle className="text-lg">Flight {index + 1}</CardTitle>
+                      <CardTitle className="text-lg">
+                        Flight {index + 1}
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor={`departureCity-${index}`}>Departure City</Label>
+                          <Label htmlFor={`departureCity-${index}`}>
+                            Departure City
+                          </Label>
                           <Input
                             id={`departureCity-${index}`}
                             value={flight.departureCity}
-                            onChange={(e) => handleFlightChange(index, "departureCity", e.target.value)}
+                            onChange={(e) =>
+                              handleFlightChange(
+                                index,
+                                "departureCity",
+                                e.target.value
+                              )
+                            }
                             required
                             minLength={2}
                             maxLength={100}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor={`destinationCity-${index}`}>Destination City</Label>
+                          <Label htmlFor={`destinationCity-${index}`}>
+                            Destination City
+                          </Label>
                           <Input
                             id={`destinationCity-${index}`}
                             value={flight.destinationCity}
-                            onChange={(e) => handleFlightChange(index, "destinationCity", e.target.value)}
+                            onChange={(e) =>
+                              handleFlightChange(
+                                index,
+                                "destinationCity",
+                                e.target.value
+                              )
+                            }
                             required
                             minLength={2}
                             maxLength={100}
@@ -462,23 +659,39 @@ export default function CreateEventPage() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor={`departureDate-${index}`}>Departure Date</Label>
+                          <Label htmlFor={`departureDate-${index}`}>
+                            Departure Date
+                          </Label>
                           <Input
                             id={`departureDate-${index}`}
                             type="date"
                             value={flight.departureDate}
-                            onChange={(e) => handleFlightChange(index, "departureDate", e.target.value)}
+                            onChange={(e) =>
+                              handleFlightChange(
+                                index,
+                                "departureDate",
+                                e.target.value
+                              )
+                            }
                             required
                             min={new Date().toISOString().split("T")[0]}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor={`returnDate-${index}`}>Return Date</Label>
+                          <Label htmlFor={`returnDate-${index}`}>
+                            Return Date
+                          </Label>
                           <Input
                             id={`returnDate-${index}`}
                             type="date"
                             value={flight.returnDate}
-                            onChange={(e) => handleFlightChange(index, "returnDate", e.target.value)}
+                            onChange={(e) =>
+                              handleFlightChange(
+                                index,
+                                "returnDate",
+                                e.target.value
+                              )
+                            }
                             required
                             min={flight.departureDate}
                           />
@@ -486,7 +699,11 @@ export default function CreateEventPage() {
                       </div>
                     </CardContent>
                     <CardFooter>
-                      <Button type="button" variant="destructive" onClick={() => removeFlight(index)}>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={() => removeFlight(index)}
+                      >
                         Remove Flight
                       </Button>
                     </CardFooter>
@@ -499,11 +716,10 @@ export default function CreateEventPage() {
             </Card>
           </TabsContent>
         </Tabs>
-        <Button type="submit" className="w-full">
-          Create Event
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Creating Event..." : "Create Event"}
         </Button>
       </form>
     </div>
-  )
+  );
 }
-

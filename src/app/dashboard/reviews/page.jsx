@@ -101,6 +101,8 @@ export default function ReviewsPage() {
         alert("Image Cannot be updated, Enter a new Review if image is to be changed")
       }
 
+      //https://dar-el-mecca.vercel.app/pages/apis/reviews/updateReview
+      console.log(process.env.NEXT_PUBLIC_HOST_NAME)
       await axios.put(`${process.env.NEXT_PUBLIC_HOST_NAME}pages/apis/reviews/updateReview`, payload, {
         headers: {
           "Content-Type": "application/json",
