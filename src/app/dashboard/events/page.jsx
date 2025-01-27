@@ -24,9 +24,9 @@ import {
 
 // Mock data
 const events = [
-  { id: 1, title: 'Summer Festival', category: 'H', date: '2023-07-15' },
-  { id: 2, title: 'Tech Conference', category: 'U', date: '2023-08-22' },
-  { id: 3, title: 'Food Fair', category: 'T', date: '2023-09-10' },
+  { id: 1, title: 'Umrah Package ', category: 'Umrah', date: '2023-07-15' },
+  { id: 2, title: 'Dubai Tour', category: 'Hajj', date: '2023-08-22' },
+  { id: 3, title: 'Hajj Package', category: 'Tour', date: '2023-09-10' },
 ]
 
 export default function EventsPage() {
@@ -75,19 +75,19 @@ export default function EventsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="H">H</SelectItem>
-            <SelectItem value="U">U</SelectItem>
-            <SelectItem value="T">T</SelectItem>
+            <SelectItem value="H">Hajj</SelectItem>
+            <SelectItem value="U">Umrah</SelectItem>
+            <SelectItem value="T">Tour</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Id</TableHead>
             <TableHead>Title</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Date</TableHead>
-            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
