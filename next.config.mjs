@@ -4,7 +4,7 @@ const nextConfig = {
         return [
           {
             source: "/api/:path*",
-            destination: "https://dar-el-mecca.vercel.app/pages/apis/:path*",
+            destination: "http://localhost:3000/pages/apis/:path*",
           },
         ];
       },

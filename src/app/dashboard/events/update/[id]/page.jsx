@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,46 +10,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-// This is a dummy function to simulate fetching event data
-const fetchEventData = async (id) => {
-  // In a real application, you would fetch this data from an API
-  return {
-    id: id,
-    title: "Sample Event",
-    images: ["https://example.com/image1.jpg", "https://example.com/image2.jpg"],
-    imageFiles: [],
-    description: "This is a sample event description",
-    type: "H",
-    countryName: "Sample Country",
-    posters: ["https://example.com/poster1.jpg"],
-    posterFiles: [],
-    duration: "3",
-    pricing: { standard: 100, vip: 200 },
-    visa: "Y",
-    descriptionTitle: "Sample Description Title",
-    importantNote: "This is an important note",
-    month: "July",
-  }
-}
-
 export default function UpdateEventPage() {
   const { id } = useParams()
+  const router = useRouter()
   const [event, setEvent] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    const loadEventData = async () => {
-      const data = await fetchEventData(id)
-      setEvent(data)
+    const fetchEventData = async () => {
+      try {
+        const response = await fetch(`http://localhost:3000/pages/apis/events/getDetails?id=${id}`)
+        if (!response.ok) throw new Error("Failed to fetch event details")
+        const data = await response.json()
+        setEvent(data)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
     }
-    loadEventData()
+    fetchEventData()
   }, [id])
 
   const handleChange = (e, name = null) => {
     if (name) {
-      // This is for the Select component
       setEvent((prev) => ({ ...prev, [name]: e }))
     } else {
-      // This is for regular input fields
       const { name, value } = e.target
       setEvent((prev) => ({ ...prev, [name]: value }))
     }
@@ -64,13 +51,60 @@ export default function UpdateEventPage() {
     }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Here you would typically send the updated event data to your backend
-    console.log("Updated event data:", event)
+    setLoading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append("title", event.title)
+      formData.append("description", event.description)
+      formData.append("type", event.type)
+      formData.append("duration", event.duration)
+      formData.append("pricing", JSON.stringify(event.pricing))
+      formData.append("visa", event.visa)
+      formData.append("descriptionTitle", event.descriptionTitle)
+      formData.append("importantNote", event.importantNote)
+      formData.append("month", event.month)
+
+      if (event.type === "T") {
+        formData.append("countryName", event.countryName)
+      }
+
+      // Append image files
+      if (event.imageFiles.length > 0) {
+        event.imageFiles.forEach((file) => formData.append("images", file))
+      }
+
+      // Append poster files
+      if (event.posterFiles.length > 0) {
+        event.posterFiles.forEach((file) => formData.append("poster", file))
+      }
+
+      // Append event details
+      formData.append("eventDetails", JSON.stringify(event.eventDetails || {}))
+
+      const response = await fetch("http://localhost:3000/pages/apis/events/updateEvent", {
+        method: "POST",
+        body: formData,
+      })
+
+      const result = await response.json()
+      if (response.ok) {
+        alert("Event updated successfully!")
+        router.push("/events") // Redirect to events page after update
+      } else {
+        throw new Error(result.message)
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (!event) return <div>Loading...</div>
+  if (loading) return <div>Loading...</div>
+  if (error) return <div className="text-red-500">Error: {error}</div>
 
   return (
     <div className="flex flex-col space-y-6 w-full">
@@ -87,58 +121,25 @@ export default function UpdateEventPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Title (Navigation title)</Label>
-                  <Input
-                    id="title"
-                    name="title"
-                    value={event.title}
-                    onChange={handleChange}
-                    required
-                    minLength={5}
-                    maxLength={150}
-                  />
+                  <Label htmlFor="title">Title</Label>
+                  <Input id="title" name="title" value={event.title} onChange={handleChange} required />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="images">Images (URLs or upload)</Label>
-                  <div className="flex flex-col space-y-2">
-                    <Input
-                      id="images"
-                      name="images"
-                      value={event.images.filter((img) => !img.startsWith("blob:")).join(",")}
-                      onChange={handleChange}
-                      placeholder="Enter image URLs separated by commas"
-                    />
-                    <Input
-                      id="imageUpload"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={(e) => handleImageUpload(e, "images")}
-                    />
-                    <p className="text-sm text-gray-500">{event.images.length} image(s) selected</p>
-                  </div>
-                  {event.images.length < 3 && (
-                    <p className="text-sm text-red-500">At least three images are required.</p>
-                  )}
+                  <Label htmlFor="images">Images</Label>
+                  <Input type="file" accept="image/*" multiple onChange={(e) => handleImageUpload(e, "imageFiles")} />
+                  <p>{event.images?.length || 0} image(s) selected</p>
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    value={event.description}
-                    onChange={handleChange}
-                    required
-                    minLength={20}
-                    maxLength={2000}
-                  />
+                  <Textarea id="description" name="description" value={event.description} onChange={handleChange} required />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="type">Type</Label>
                   <Select name="type" value={event.type} onValueChange={(value) => handleChange(value, "type")}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select event type" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select event type" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="H">H</SelectItem>
                       <SelectItem value="U">U</SelectItem>
@@ -146,86 +147,23 @@ export default function UpdateEventPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
                 {event.type === "T" && (
                   <div className="space-y-2">
                     <Label htmlFor="countryName">Country Name</Label>
-                    <Input
-                      id="countryName"
-                      name="countryName"
-                      value={event.countryName}
-                      onChange={handleChange}
-                      required
-                      minLength={2}
-                      maxLength={100}
-                    />
+                    <Input id="countryName" name="countryName" value={event.countryName} onChange={handleChange} required />
                   </div>
                 )}
-                {event.type === "H" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="posters">Posters (URLs or upload, at least 1 required)</Label>
-                    <div className="flex flex-col space-y-2">
-                      <Input
-                        id="posters"
-                        name="posters"
-                        value={event.posters.filter((poster) => !poster.startsWith("blob:")).join(",")}
-                        onChange={handleChange}
-                        placeholder="Enter poster URLs separated by commas"
-                      />
-                      <Input
-                        id="posterUpload"
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) => handleImageUpload(e, "posters")}
-                      />
-                      <p className="text-sm text-gray-500">{event.posters.length} poster(s) selected</p>
-                    </div>
-                    {event.posters.length === 0 && (
-                      <p className="text-sm text-red-500">At least one poster is required.</p>
-                    )}
-                  </div>
-                )}
+
                 <div className="space-y-2">
-                  <Label htmlFor="duration">Duration (nights)</Label>
-                  <Input
-                    id="duration"
-                    name="duration"
-                    type="number"
-                    value={event.duration}
-                    onChange={handleChange}
-                    required
-                    min={1}
-                    max={365}
-                  />
+                  <Label htmlFor="pricing">Pricing</Label>
+                  <Textarea id="pricing" name="pricing" value={JSON.stringify(event.pricing, null, 2)} onChange={handleChange} />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="pricing">Pricing (JSON)</Label>
-                  <Textarea
-                    id="pricing"
-                    name="pricing"
-                    value={typeof event.pricing === "object" ? JSON.stringify(event.pricing, null, 2) : event.pricing}
-                    onChange={(e) => {
-                      try {
-                        const parsed = JSON.parse(e.target.value)
-                        setEvent((prev) => ({ ...prev, pricing: parsed }))
-                      } catch (error) {
-                        setEvent((prev) => ({ ...prev, pricing: e.target.value }))
-                      }
-                    }}
-                    required
-                  />
-                  {typeof event.pricing === "string" && (
-                    <p className="text-sm text-yellow-500">
-                      Warning: Current pricing is not valid JSON. Please correct it before submitting.
-                    </p>
-                  )}
-                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="visa">Visa</Label>
                   <Select name="visa" value={event.visa} onValueChange={(value) => handleChange(value, "visa")}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select visa type" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select visa type" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Y">Yes</SelectItem>
                       <SelectItem value="N">No</SelectItem>
@@ -233,45 +171,10 @@ export default function UpdateEventPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="descriptionTitle">Description Title</Label>
-                  <Input
-                    id="descriptionTitle"
-                    name="descriptionTitle"
-                    value={event.descriptionTitle}
-                    onChange={handleChange}
-                    required
-                    minLength={5}
-                    maxLength={2000}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="importantNote">Important Note</Label>
-                  <Textarea
-                    id="importantNote"
-                    name="importantNote"
-                    value={event.importantNote}
-                    onChange={handleChange}
-                    minLength={5}
-                    maxLength={1000}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="month">Month</Label>
-                  <Input
-                    id="month"
-                    name="month"
-                    value={event.month}
-                    onChange={handleChange}
-                    required
-                    minLength={3}
-                    maxLength={100}
-                  />
-                </div>
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="w-full">
-                  Update Event
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Updating..." : "Update Event"}
                 </Button>
               </CardFooter>
             </Card>
@@ -281,4 +184,3 @@ export default function UpdateEventPage() {
     </div>
   )
 }
-
