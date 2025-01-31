@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import axios from "axios";
+import Router, { useRouter } from "next/router";
 
 export default function UpdateFlightPage() {
   const { id } = useParams();
@@ -16,6 +17,7 @@ export default function UpdateFlightPage() {
   const [selectedFlightIndex, setSelectedFlightIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const router = useRouter()
 
   useEffect(() => {
     const loadFlightData = async () => {
@@ -76,6 +78,7 @@ export default function UpdateFlightPage() {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
       alert("Flight updated successfully!");
+      router.push(`/dashboard/events`);
     } catch (error) {
       console.error("Error updating flight:", error);
       alert("Failed to update the flight.");

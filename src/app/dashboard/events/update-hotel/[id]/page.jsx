@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import Router from "next/router";
 import {
   Card,
   CardContent,
@@ -22,6 +23,7 @@ export default function UpdateHotelsPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const { id } = useParams();
+  const router = useRouter();
 
   useEffect(() => {
     const loadHotelsData = async () => {
@@ -99,9 +101,11 @@ export default function UpdateHotelsPage() {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
       alert("Hotel updated successfully!");
+      
     } catch (error) {
       console.error("Error updating hotel:", error);
       alert("Failed to update the hotel.");
+      router.push(`/dashboard/events`);
     }
     finally{
       setUpdating(false)

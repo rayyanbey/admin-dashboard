@@ -20,37 +20,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-
-
-// Mock data
-const events = [
-  { id: 1, title: 'Umrah Package ', category: 'Umrah', date: '2023-07-15' },
-  { id: 2, title: 'Dubai Tour', category: 'Hajj', date: '2023-08-22' },
-  { id: 3, title: 'Hajj Package', category: 'Tour', date: '2023-09-10' },
-]
+import axios from 'axios' // Ensure axios is imported
+import { useRouter } from 'next/router'
 
 export default function EventsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
+  const [events, setEvents] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    fetchEvents()
+  }, [])
+
+  const fetchEvents = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/pages/apis/events/allEventsTitles')
+      console.log('API Response:', response.data); // Debugging
+      const data = response.data
+      if (data.status === 'success') {
+        const flattenedEvents = data.data.flatMap(group => 
+          group.events.map(event => ({
+            ...event,
+            category: group.type
+          }))
+        )
+        setEvents(flattenedEvents)
+      } else {
+        throw new Error(data.message || 'Failed to fetch events')
+      }
+    } catch (err) {
+      console.error('Error fetching events:', err.response ? err.response.data : err.message)
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const filteredEvents = events.filter(event => 
     event.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
     (categoryFilter === '' || event.category === categoryFilter)
   )
 
-  useEffect(() => {
-    fetchEvents();
-  }, [])
-  
-  const fetchEvents = async()=>{
-    //api to get event data
-  }
-  
-  const handleDelete = (id) => {
-    if(alert("Are you Sure?")){
-      //calling api to delete this event
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this event?")) {
+      try {
+        const response = await axios.delete(`http://localhost:3000/pages/apis/events/deleteEvent/${id}`)
+        if (response.status === 200) {
+          setEvents(prev => prev.filter(event => event.id !== id))
+          alert('Event deleted successfully')
+        } else {
+          throw new Error('Failed to delete event')
+        }
+      } catch (err) {
+        console.error('Error deleting event:', err.response ? err.response.data : err.message)
+        alert(err.message)
+      }
     }
   }
+  if (loading) return <div>Loading events...</div>
+  if (error) return <div className="text-red-500">Error: {error}</div>
 
   return (
     <div className="space-y-4">
@@ -87,7 +118,8 @@ export default function EventsPage() {
             <TableHead>Id</TableHead>
             <TableHead>Title</TableHead>
             <TableHead>Category</TableHead>
-            <TableHead>Date</TableHead>
+            <TableHead>Month</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -95,8 +127,11 @@ export default function EventsPage() {
             <TableRow key={event.id}>
               <TableCell>{event.id}</TableCell>
               <TableCell>{event.title}</TableCell>
-              <TableCell>{event.category}</TableCell>
-              <TableCell>{event.date}</TableCell>
+              <TableCell>
+                {event.category === 'H' ? 'Hajj' : 
+                 event.category === 'U' ? 'Umrah' : 'Tour'}
+              </TableCell>
+              <TableCell>{event.month}</TableCell>
               <TableCell>
                 <Button variant="outline" size="sm" asChild className="mr-2">
                   <Link href={`/dashboard/events/update/${event.id}`}>Update Details</Link>
@@ -107,7 +142,13 @@ export default function EventsPage() {
                 <Button variant="outline" size="sm" asChild className="mr-2">
                   <Link href={`/dashboard/events/update-hotel/${event.id}`}>Update Hotel</Link>
                 </Button>
-                <Button variant="destructive" size="sm" onClick={() => handleDelete(event.id)}>Delete</Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => handleDelete(event.id)}
+                >
+                  Delete
+                </Button>
               </TableCell>
             </TableRow>
           ))}
@@ -116,4 +157,3 @@ export default function EventsPage() {
     </div>
   )
 }
-
