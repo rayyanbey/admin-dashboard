@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import axios from 'axios' // Ensure axios is imported
-import { useRouter } from 'next/router'
 
 export default function EventsPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -29,7 +28,6 @@ export default function EventsPage() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const router = useRouter()
 
   useEffect(() => {
     fetchEvents()
@@ -80,6 +78,7 @@ export default function EventsPage() {
       }
     }
   }
+
   if (loading) return <div>Loading events...</div>
   if (error) return <div className="text-red-500">Error: {error}</div>
 

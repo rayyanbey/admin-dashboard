@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlusCircle, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 
 export default function CreateEventPage() {
   const [event, setEvent] = useState({
@@ -40,22 +42,21 @@ export default function CreateEventPage() {
     month: "",
     eventDetails: {
       hotels: [],
-      exclusion: {},
-      inclusion: {},
-      transportation: {},
+      exclusion: "",
+      inclusion: "",
+      transportation: "",
     },
     flights: [],
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleChange = (e, name = null) => {
     if (name) {
-      // This is for the Select component
       setEvent((prev) => ({ ...prev, [name]: e }));
     } else {
-      // This is for regular input fields
       const { name, value } = e.target;
       setEvent((prev) => ({ ...prev, [name]: value }));
     }
@@ -189,7 +190,7 @@ export default function CreateEventPage() {
     setLoading(true);
     setError("");
 
-    // Validation logic (updated for poster)
+    // Validation logic
     if (event.type === "H" && !event.poster) {
       setError("Poster is required for Hajj events");
       setLoading(false);
@@ -218,16 +219,18 @@ export default function CreateEventPage() {
       formData.append("poster", event.poster);
     }
 
-    // Prepare and append event details
-    const eventDetails = {
-      ...event.eventDetails,
-      hotels: event.eventDetails.hotels.map((hotel) => ({
-        name: hotel.name,
-        location: hotel.location,
-        description: hotel.description,
-      })),
-    };
-    formData.append("eventDetails", JSON.stringify(eventDetails));
+    // Append event details
+    formData.append(
+      "eventDetails",
+      JSON.stringify({
+        ...event.eventDetails,
+        hotels: event.eventDetails.hotels.map((hotel) => ({
+          name: hotel.name,
+          location: hotel.location,
+          description: hotel.description,
+        })),
+      })
+    );
 
     // Append hotel images
     event.eventDetails.hotels.forEach((hotel, index) => {
@@ -248,21 +251,28 @@ export default function CreateEventPage() {
     );
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/pages/apis/events/createEvent`,
+      const response = await axios.post(
+        "http://localhost:3000/pages/apis/events/createEvent",
+        formData,
         {
-          method: "POST",
-          body: formData,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         }
       );
 
-      // ... rest of response handling remains the same
+      if (response.status === 200) {
+        alert("Event created successfully");
+        router.push("/dashboard/events");
+      }
     } catch (error) {
-      // ... error handling
+      console.error("Error creating event:", error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Updated form sections
   return (
     <div className="flex flex-col space-y-6 w-full">
       <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">

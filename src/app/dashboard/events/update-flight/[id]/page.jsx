@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import axios from "axios";
-import Router, { useRouter } from "next/router";
 
 export default function UpdateFlightPage() {
   const { id } = useParams();
@@ -17,7 +16,6 @@ export default function UpdateFlightPage() {
   const [selectedFlightIndex, setSelectedFlightIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const router = useRouter()
 
   useEffect(() => {
     const loadFlightData = async () => {
