@@ -65,7 +65,7 @@ export default function EventsPage() {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this event?")) {
       try {
-        const response = await axios.delete(`http://localhost:3000/pages/apis/events/deleteEvent/${id}`)
+        const response = await axios.delete(`http://localhost:3000/pages/apis/events/deleteEventById/${id}`)
         if (response.status === 200) {
           setEvents(prev => prev.filter(event => event.id !== id))
           alert('Event deleted successfully')

@@ -20,15 +20,15 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, X } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 
 export default function CreateEventPage() {
   const [event, setEvent] = useState({
     title: "",
-    images: [],
-    imageFiles: [],
+    images: [], // for preview URLs
+    imageFiles: [], // for file objects
     description: "",
     type: "",
     countryName: "",
@@ -41,17 +41,30 @@ export default function CreateEventPage() {
     importantNote: "",
     month: "",
     eventDetails: {
-      hotels: [],
-      exclusion: "",
-      inclusion: "",
-      transportation: "",
+      inclusion: [],
+      exclusion: [],
+      transportation: [],
     },
+    hotels: [], // each hotel may have its own imageFiles and preview URLs
     flights: [],
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+
+  const initialPricing = {};
+  const initialPricingText =
+    typeof initialPricing === "object"
+      ? Object.entries(initialPricing)
+          .map(([key, value]) => `${key}:${value}`)
+          .join(",")
+      : initialPricing || "";
+
+  const [pricingText, setPricingText] = useState(initialPricingText);
+  const [pricing, setPricing] = useState(
+    typeof initialPricing === "object" ? initialPricing : {}
+  );
 
   const handleChange = (e, name = null) => {
     if (name) {
@@ -64,11 +77,12 @@ export default function CreateEventPage() {
 
   const handleImageUpload = (e, field) => {
     const files = Array.from(e.target.files);
+    // Save both file objects (for upload) and blob URLs (for preview)
     setEvent((prev) => ({
       ...prev,
-      [`${field}Files`]: [...(prev[`${field}Files`] || []), ...files],
-      [field]: [
-        ...(prev[field] || []),
+      imageFiles: [...prev.imageFiles, ...files],
+      images: [
+        ...prev.images,
         ...files.map((file) => URL.createObjectURL(file)),
       ],
     }));
@@ -76,19 +90,16 @@ export default function CreateEventPage() {
 
   const handleHotelChange = (index, field, value) => {
     setEvent((prev) => {
-      const newHotels = [...prev.eventDetails.hotels];
+      const newHotels = [...prev.hotels];
       newHotels[index] = { ...newHotels[index], [field]: value };
-      return {
-        ...prev,
-        eventDetails: { ...prev.eventDetails, hotels: newHotels },
-      };
+      return { ...prev, hotels: newHotels };
     });
   };
 
   const handleHotelImageUpload = (index, e) => {
     const files = Array.from(e.target.files);
     setEvent((prev) => {
-      const newHotels = [...prev.eventDetails.hotels];
+      const newHotels = [...prev.hotels];
       newHotels[index] = {
         ...newHotels[index],
         imageFiles: [...(newHotels[index].imageFiles || []), ...files],
@@ -97,10 +108,7 @@ export default function CreateEventPage() {
           ...files.map((file) => URL.createObjectURL(file)),
         ],
       };
-      return {
-        ...prev,
-        eventDetails: { ...prev.eventDetails, hotels: newHotels },
-      };
+      return { ...prev, hotels: newHotels };
     });
   };
 
@@ -115,29 +123,25 @@ export default function CreateEventPage() {
   const addHotel = () => {
     setEvent((prev) => ({
       ...prev,
-      eventDetails: {
-        ...prev.eventDetails,
-        hotels: [
-          ...prev.eventDetails.hotels,
-          {
-            name: "",
-            location: "",
-            description: "",
-            images: [],
-            imageFiles: [],
-          },
-        ],
-      },
+      hotels: [
+        ...prev.hotels,
+        {
+          name: "",
+          locationDescription: "",
+          description: "",
+          accomodationDescription: "",
+          images: [],
+          imageFiles: [],
+          city: "",
+        },
+      ],
     }));
   };
 
   const removeHotel = (index) => {
     setEvent((prev) => ({
       ...prev,
-      eventDetails: {
-        ...prev.eventDetails,
-        hotels: prev.eventDetails.hotels.filter((_, i) => i !== index),
-      },
+      hotels: prev.hotels.filter((_, i) => i !== index),
     }));
   };
 
@@ -149,8 +153,8 @@ export default function CreateEventPage() {
         {
           departureCity: "",
           destinationCity: "",
-          departureDate: "",
-          returnDate: "",
+          date: "",
+          type: "Departure", // default flight type
         },
       ],
     }));
@@ -165,11 +169,17 @@ export default function CreateEventPage() {
 
   const handleEventDetailChange = (e, field) => {
     const { value } = e.target;
+    // Convert text input to array by splitting on commas or new lines
+    const items = value
+      .split(/[\n,]/)
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+
     setEvent((prev) => ({
       ...prev,
       eventDetails: {
         ...prev.eventDetails,
-        [field]: value,
+        [field]: items,
       },
     }));
   };
@@ -185,70 +195,76 @@ export default function CreateEventPage() {
     }
   };
 
+  const handleBlur = () => {
+    const pricingPairs = pricingText.split(",").map((pair) => pair.trim());
+    const newPricing = pricingPairs.reduce((acc, pair) => {
+      const [key, value] = pair.split(":");
+      if (key && value) {
+        acc[key.trim()] = Number(value.trim());
+      }
+      return acc;
+    }, {});
+    setPricing(newPricing);
+    setEvent((prev) => ({ ...prev, pricing: newPricing }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    // Validation logic
-    if (event.type === "H" && !event.poster) {
-      setError("Poster is required for Hajj events");
-      setLoading(false);
-      return;
-    }
+    // Convert pricing text to object
+    const pricingObj = pricingText.split(",").reduce((acc, pair) => {
+      const [key, value] = pair.split(":");
+      if (key && value) acc[key.trim()] = Number(value.trim());
+      return acc;
+    }, {});
 
     const formData = new FormData();
 
-    // Append basic fields
-    formData.append("title", event.title);
-    formData.append("description", event.description);
-    formData.append("type", event.type);
-    formData.append("duration", event.duration);
-    formData.append("pricing", JSON.stringify(event.pricing));
-    formData.append("visa", event.visa);
-    formData.append("descriptionTitle", event.descriptionTitle);
-    formData.append("countryName", event.countryName);
-    formData.append("importantNote", event.importantNote);
-    formData.append("month", event.month);
+    // 1. Append basic fields
+    const eventData = {
+      title: event.title,
+      description: event.description,
+      type: event.type,
+      duration: event.duration,
+      pricing: JSON.stringify(pricingObj),
+      visa: event.visa,
+      descriptionTitle: event.descriptionTitle,
+      countryName: event.type === "T" ? event.countryName : "",
+      importantNote: event.importantNote,
+      month: event.month,
+      eventDetails: JSON.stringify(event.eventDetails),
+      hotels: JSON.stringify(
+        event.hotels.map((h) => ({
+          ...h,
+          images: [], // Remove blob URLs – backend will handle actual images from files
+        }))
+      ),
+      flightDetails: JSON.stringify(event.flights),
+    };
 
-    // Append event images
-    event.imageFiles.forEach((file) => formData.append("images", file));
+    Object.entries(eventData).forEach(([key, value]) => {
+      formData.append(key, value);
+    });
 
-    // Append poster if exists
-    if (event.poster) {
-      formData.append("poster", event.poster);
-    }
+    // 2. Append image FILES (using the file objects, not blob URLs)
+    // Event images
+    (event.imageFiles || []).forEach((file) => {
+      formData.append("images", file);
+    });
 
-    // Append event details
-    formData.append(
-      "eventDetails",
-      JSON.stringify({
-        ...event.eventDetails,
-        hotels: event.eventDetails.hotels.map((hotel) => ({
-          name: hotel.name,
-          location: hotel.location,
-          description: hotel.description,
-        })),
-      })
-    );
-
-    // Append hotel images
-    event.eventDetails.hotels.forEach((hotel, index) => {
-      hotel.imageFiles.forEach((file) => {
+    // Hotel images: use hotel.imageFiles
+    event.hotels.forEach((hotel, index) => {
+      (hotel.imageFiles || []).forEach((file) => {
         formData.append(`hotelimages[${index}]`, file);
       });
     });
 
-    // Append flight details
-    formData.append(
-      "flightDetails",
-      JSON.stringify(
-        event.flights.map((flight) => ({
-          ...flight,
-          date: new Date(flight.date).toISOString(),
-        }))
-      )
-    );
+    // 3. Append poster if exists
+    if (event.poster) {
+      formData.append("poster", event.poster);
+    }
 
     try {
       const response = await axios.post(
@@ -262,12 +278,10 @@ export default function CreateEventPage() {
       );
 
       if (response.status === 200) {
-        alert("Event created successfully");
         router.push("/dashboard/events");
       }
     } catch (error) {
-      console.error("Error creating event:", error);
-      setError(error.message);
+      setError(error.response?.data?.message || "Failed to create event");
     } finally {
       setLoading(false);
     }
@@ -293,7 +307,7 @@ export default function CreateEventPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Title (Navigation title)</Label>
+                  <Label htmlFor="title">Title</Label>
                   <Input
                     id="title"
                     name="title"
@@ -305,7 +319,9 @@ export default function CreateEventPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="images">Images (URLs or upload)</Label>
+                  <Label htmlFor="images">
+                    Images (enter URLs or upload from device)
+                  </Label>
                   <div className="flex flex-col space-y-2">
                     <Input
                       id="images"
@@ -356,13 +372,13 @@ export default function CreateEventPage() {
                       <SelectValue placeholder="Select event type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Hajj">Hajj</SelectItem>
-                      <SelectItem value="Umrah">Umrah</SelectItem>
-                      <SelectItem value="Tour">Tour</SelectItem>
+                      <SelectItem value="H">Hajj</SelectItem>
+                      <SelectItem value="U">Umrah</SelectItem>
+                      <SelectItem value="T">Tour</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                {event.type === "Tour" && (
+                {event.type === "T" && (
                   <div className="space-y-2">
                     <Label htmlFor="countryName">Country Name</Label>
                     <Input
@@ -376,28 +392,24 @@ export default function CreateEventPage() {
                     />
                   </div>
                 )}
-
-                {/* Updated poster section */}
-                {event.type === "H" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="poster">Poster (Upload)</Label>
-                    <div className="flex flex-col space-y-2">
-                      <Input
-                        id="poster"
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePosterUpload}
+                <div className="space-y-2">
+                  <Label htmlFor="poster">Poster (Upload)</Label>
+                  <div className="flex flex-col space-y-2">
+                    <Input
+                      id="poster"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePosterUpload}
+                    />
+                    {event.posterUrl && (
+                      <img
+                        src={event.posterUrl}
+                        alt="Poster preview"
+                        className="h-32 w-32 object-cover"
                       />
-                      {event.posterUrl && (
-                        <img
-                          src={event.posterUrl}
-                          alt="Poster preview"
-                          className="h-32 w-32 object-cover"
-                        />
-                      )}
-                    </div>
+                    )}
                   </div>
-                )}
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="duration">Duration (nights)</Label>
                   <Input
@@ -412,34 +424,21 @@ export default function CreateEventPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="pricing">Pricing (JSON)</Label>
-                  <Textarea
+                  <Label htmlFor="pricing">
+                    Pricing (comma-separated key:value pairs)
+                  </Label>
+                  <Input
                     id="pricing"
                     name="pricing"
-                    value={
-                      typeof event.pricing === "object"
-                        ? JSON.stringify(event.pricing, null, 2)
-                        : event.pricing
-                    }
-                    onChange={(e) => {
-                      try {
-                        const parsed = JSON.parse(e.target.value);
-                        setEvent((prev) => ({ ...prev, pricing: parsed }));
-                      } catch (error) {
-                        setEvent((prev) => ({
-                          ...prev,
-                          pricing: e.target.value,
-                        }));
-                      }
-                    }}
+                    value={pricingText}
+                    onChange={(e) => setPricingText(e.target.value)}
+                    onBlur={handleBlur}
+                    placeholder="e.g., Quad:1000,Double:2000"
                     required
                   />
-                  {typeof event.pricing === "string" && (
-                    <p className="text-sm text-yellow-500">
-                      Warning: Current pricing is not valid JSON. Please correct
-                      it before submitting.
-                    </p>
-                  )}
+                  <p className="text-sm text-gray-500">
+                    Enter pricing in the format: <code>key:value,key:value</code>
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="visa">Visa</Label>
@@ -493,32 +492,34 @@ export default function CreateEventPage() {
                     maxLength={100}
                   />
                 </div>
-                {/* Updated event details fields */}
+                {/* Event details fields */}
                 <div className="space-y-2">
                   <Label htmlFor="exclusion">Exclusion</Label>
-                  <Input
+                  <Textarea
                     id="exclusion"
                     name="exclusion"
                     value={event.eventDetails.exclusion}
                     onChange={(e) => handleEventDetailChange(e, "exclusion")}
                     required
+                    minLength={50}
+                    maxLength={10000}
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="inclusion">Inclusion</Label>
-                  <Input
+                  <Textarea
                     id="inclusion"
                     name="inclusion"
                     value={event.eventDetails.inclusion}
                     onChange={(e) => handleEventDetailChange(e, "inclusion")}
                     required
+                    minLength={50}
+                    maxLength={10000}
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="transportation">Transportation</Label>
-                  <Input
+                  <Textarea
                     id="transportation"
                     name="transportation"
                     value={event.eventDetails.transportation}
@@ -526,6 +527,8 @@ export default function CreateEventPage() {
                       handleEventDetailChange(e, "transportation")
                     }
                     required
+                    minLength={5}
+                    maxLength={10000}
                   />
                 </div>
               </CardContent>
@@ -537,7 +540,7 @@ export default function CreateEventPage() {
                 <CardTitle>Hotel Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {event.eventDetails.hotels.map((hotel, index) => (
+                {event.hotels.map((hotel, index) => (
                   <Card key={index}>
                     <CardHeader>
                       <CardTitle className="text-lg">
@@ -546,7 +549,9 @@ export default function CreateEventPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor={`hotelName-${index}`}>Hotel Name</Label>
+                        <Label htmlFor={`hotelName-${index}`}>
+                          Hotel Name
+                        </Label>
                         <Input
                           id={`hotelName-${index}`}
                           value={hotel.name}
@@ -559,18 +564,39 @@ export default function CreateEventPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor={`hotelLocation-${index}`}>
-                          Location
+                        <Label htmlFor={`hotelLocationDescription-${index}`}>
+                          Location Description
                         </Label>
                         <Input
-                          id={`hotelLocation-${index}`}
-                          value={hotel.location}
+                          id={`hotelLocationDescription-${index}`}
+                          value={hotel.locationDescription}
                           onChange={(e) =>
-                            handleHotelChange(index, "location", e.target.value)
+                            handleHotelChange(
+                              index,
+                              "locationDescription",
+                              e.target.value
+                            )
                           }
-                          required
-                          minLength={3}
-                          maxLength={100}
+                          minLength={10}
+                          maxLength={1000}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`hotelAccomodationDescription-${index}`}>
+                          Accomodation Description
+                        </Label>
+                        <Input
+                          id={`hotelAccomodationDescription-${index}`}
+                          value={hotel.accomodationDescription}
+                          onChange={(e) =>
+                            handleHotelChange(
+                              index,
+                              "accomodationDescription",
+                              e.target.value
+                            )
+                          }
+                          minLength={10}
+                          maxLength={1000}
                         />
                       </div>
                       <div className="space-y-2">
@@ -593,6 +619,19 @@ export default function CreateEventPage() {
                         />
                       </div>
                       <div className="space-y-2">
+                        <Label htmlFor={`hotelCity-${index}`}>City</Label>
+                        <Input
+                          id={`hotelCity-${index}`}
+                          value={hotel.city}
+                          onChange={(e) =>
+                            handleHotelChange(index, "city", e.target.value)
+                          }
+                          required
+                          minLength={3}
+                          maxLength={20}
+                        />
+                      </div>
+                      <div className="space-y-2">
                         <Label htmlFor={`hotelImages-${index}`}>
                           Images (upload from device)
                         </Label>
@@ -605,7 +644,7 @@ export default function CreateEventPage() {
                             onChange={(e) => handleHotelImageUpload(index, e)}
                           />
                           <p className="text-sm text-gray-500">
-                            {hotel.images.length} image(s) selected
+                            {(hotel.images || []).length} image(s) selected
                           </p>
                         </div>
                       </div>
@@ -636,32 +675,25 @@ export default function CreateEventPage() {
                 {event.flights.map((flight, index) => (
                   <Card key={index}>
                     <CardHeader>
-                      <div className="flex justify-between items-center">
-                        <CardTitle className="text-lg">
-                          Flight {index + 1}
-                        </CardTitle>
-                        <Select
-                          value={flight.type}
-                          onValueChange={(value) => {
-                            handleFlightChange(index, "type", value);
-                            if (value === "return") {
-                              handleFlightChange(
-                                index,
-                                "destinationCity",
-                                flight.departureCity
-                              );
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Flight Type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="departure">Departure</SelectItem>
-                            <SelectItem value="return">Return</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <CardTitle className="text-lg">
+                        Flight {index + 1}
+                      </CardTitle>
+                      <Select
+                        value={flight.type}
+                        onValueChange={(value) =>
+                          handleFlightChange(index, "type", value)
+                        }
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Flight Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Departure">
+                            Departure
+                          </SelectItem>
+                          <SelectItem value="Return">Return</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -672,20 +704,13 @@ export default function CreateEventPage() {
                           <Input
                             id={`departureCity-${index}`}
                             value={flight.departureCity}
-                            onChange={(e) => {
+                            onChange={(e) =>
                               handleFlightChange(
                                 index,
                                 "departureCity",
                                 e.target.value
-                              );
-                              if (flight.type === "return") {
-                                handleFlightChange(
-                                  index,
-                                  "destinationCity",
-                                  e.target.value
-                                );
-                              }
-                            }}
+                              )
+                            }
                             required
                             minLength={2}
                             maxLength={100}
@@ -697,24 +722,17 @@ export default function CreateEventPage() {
                           </Label>
                           <Input
                             id={`destinationCity-${index}`}
-                            value={
-                              flight.type === "return"
-                                ? flight.departureCity
-                                : flight.destinationCity
+                            value={flight.destinationCity}
+                            onChange={(e) =>
+                              handleFlightChange(
+                                index,
+                                "destinationCity",
+                                e.target.value
+                              )
                             }
-                            onChange={(e) => {
-                              if (flight.type !== "return") {
-                                handleFlightChange(
-                                  index,
-                                  "destinationCity",
-                                  e.target.value
-                                );
-                              }
-                            }}
                             required
                             minLength={2}
                             maxLength={100}
-                            disabled={flight.type === "return"}
                           />
                         </div>
                       </div>

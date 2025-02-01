@@ -233,7 +233,7 @@ export default function UpdateHotelsPage() {
                     onClick={(e) => handleSubmit(index, e)}
                     disabled={updating}
                   >
-                    {updating ? "Updating..." : "Update Flight"}
+                    {updating ? "Updating..." : "Update Hotel"}
                   </Button>
                 </CardFooter>
               </Card>
