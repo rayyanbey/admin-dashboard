@@ -28,6 +28,7 @@ export default function EventsPage() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [deleting,setDeleting] = useState(true)
 
   useEffect(() => {
     fetchEvents()
@@ -75,6 +76,9 @@ export default function EventsPage() {
       } catch (err) {
         console.error('Error deleting event:', err.response ? err.response.data : err.message)
         alert(err.message)
+      }
+      finally{
+        setDeleting(false)
       }
     }
   }
@@ -146,7 +150,7 @@ export default function EventsPage() {
                   size="sm" 
                   onClick={() => handleDelete(event.id)}
                 >
-                  Delete
+                  {deleting ? 'Delete' : 'Deleting...'}
                 </Button>
               </TableCell>
             </TableRow>

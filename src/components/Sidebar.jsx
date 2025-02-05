@@ -7,7 +7,6 @@ import { Calendar, MessageSquare, Settings, Building } from 'lucide-react'
 const sidebarItems = [
   { name: 'Events', href: '/dashboard/events', icon: Calendar },
   { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare },
-  { name: 'Services', href: '/dashboard/services', icon: Settings },
   { name: 'Company Info', href: '/dashboard/company', icon: Building },
 ]
 
