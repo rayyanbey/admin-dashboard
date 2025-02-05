@@ -52,12 +52,8 @@ export default function CompanyInfoPage() {
     const fetchData = async () => {
       try {
         const [companyInfoRes, businessHoursRes] = await Promise.all([
-          axios.get(
-            "http://localhost:3000/pages/apis/company/getCompanyInformation"
-          ),
-          axios.get(
-            "http://localhost:3000/pages/apis/company/getBusinessHoursAdmin"
-          ),
+          axios.get("http://localhost:3000/pages/apis/company/getCompanyInformation"),
+          axios.get("http://localhost:3000/pages/apis/company/getBusinessHoursAdmin"),
         ]);
 
         const { address, contactInformation } = companyInfoRes.data.data;
@@ -66,10 +62,10 @@ export default function CompanyInfoPage() {
         setInfo({
           address: address.address,
           documentAddress: address.documentAddress,
-          whatsapp: address.whatsapp,
           phoneNumbers: contactInformation.phoneNumbers,
           faxNumbers: contactInformation.faxNumbers,
           email: contactInformation.email,
+          whatsapp: contactInformation.whatsapp,
           businessHours,
         });
       } catch (error) {
@@ -113,7 +109,9 @@ export default function CompanyInfoPage() {
         return;
       }
       if (
-        (field === "phoneNumbers" || field === "faxNumbers") &&
+        (field === "phoneNumbers" ||
+          field === "faxNumbers" ||
+          field === "whatsapp") &&
         !validatePhones(tempData)
       ) {
         setValidationError("Invalid phone number format");
@@ -129,28 +127,24 @@ export default function CompanyInfoPage() {
         phoneNumbers: "updateContactInfo",
         email: "updateContactInfo",
         faxNumbers: "updateContactInfo",
+        whatsapp: "updateContactInfo",
         address: "updateAddress",
         documentAddress: "updateAddress",
-        whatsapp: "updateAddress",
       }[field];
-
-      console.log("Endpoint", endpoint);
-      console.log("Field", field);
-      console.log("TempData", tempData);
 
       if (endpoint === "updateContactInfo") {
         payload = {
           phoneNumbers: info.phoneNumbers,
           email: info.email,
           faxNumbers: info.faxNumbers,
-          [field]: tempData, // Override only the changed field
+          whatsapp: info.whatsapp,
+          [field]: tempData,
         };
       } else if (endpoint === "updateAddress") {
         payload = {
           address: info.address,
           documentAddress: info.documentAddress,
-          whatsapp: info.whatsapp,
-          [field]: tempData, // Override only the changed field
+          [field]: tempData,
         };
       } else if (endpoint === "updateBusinessHours") {
         payload = {
@@ -161,33 +155,14 @@ export default function CompanyInfoPage() {
         };
       }
 
-      console.log("Payload", payload);
-      await axios.put(
-        `http://localhost:3000/pages/apis/company/${endpoint}`,
-        payload
-      );
+      await axios.put(`http://localhost:3000/pages/apis/company/${endpoint}`, payload);
       setInfo((prev) => ({
         ...prev,
-        ...(endpoint === "updateContactInfo"
-          ? {
-              phoneNumbers: payload.phoneNumbers,
-              email: payload.email,
-              faxNumbers: payload.faxNumbers,
-            }
-          : {}),
-        ...(endpoint === "updateAddress"
-          ? {
-              address: payload.address,
-              documentAddress: payload.documentAddress,
-              whatsapp: payload.whatsapp,
-            }
-          : {}),
+        ...(endpoint === "updateContactInfo" ? payload : {}),
+        ...(endpoint === "updateAddress" ? payload : {}),
         ...(endpoint === "updateBusinessHours"
-          ? {
-              businessHours: payload.days,
-            }
+          ? { businessHours: payload.days }
           : {}),
-        [field]: tempData,
       }));
 
       toast.success("Changes saved successfully");
@@ -204,31 +179,79 @@ export default function CompanyInfoPage() {
   const applyHourPreset = (preset) => {
     const presetHours = {
       standard: {
-        monday: { open: true, openingTime: "09:00 AM", closingTime: "05:00 PM" },
-        tuesday: { open: true, openingTime: "09:00 AM", closingTime: "05:00 PM" },
-        wednesday: { open: true, openingTime: "09:00 AM", closingTime: "05:00 PM" },
-        thursday: { open: true, openingTime: "09:00 AM", closingTime: "05:00 PM" },
-        friday: { open: true, openingTime: "09:00 AM", closingTime: "05:00 PM" },
+        monday: {
+          open: true,
+          openingTime: "09:00 AM",
+          closingTime: "05:00 PM",
+        },
+        tuesday: {
+          open: true,
+          openingTime: "09:00 AM",
+          closingTime: "05:00 PM",
+        },
+        wednesday: {
+          open: true,
+          openingTime: "09:00 AM",
+          closingTime: "05:00 PM",
+        },
+        thursday: {
+          open: true,
+          openingTime: "09:00 AM",
+          closingTime: "05:00 PM",
+        },
+        friday: {
+          open: true,
+          openingTime: "09:00 AM",
+          closingTime: "05:00 PM",
+        },
         saturday: { open: false, openingTime: null, closingTime: null },
         sunday: { open: false, openingTime: null, closingTime: null },
       },
       "24/7": {
-        monday: { open: true, openingTime: "12:00 AM", closingTime: "11:59 PM" },
-        tuesday: { open: true, openingTime: "12:00 AM", closingTime: "11:59 PM" },
-        wednesday: { open: true, openingTime: "12:00 AM", closingTime: "11:59 PM" },
-        thursday: { open: true, openingTime: "12:00 AM", closingTime: "11:59 PM" },
-        friday: { open: true, openingTime: "12:00 AM", closingTime: "11:59 PM" },
-        saturday: { open: true, openingTime: "12:00 AM", closingTime: "11:59 PM" },
-        sunday: { open: true, openingTime: "12:00 AM", closingTime: "11:59 PM" },
+        monday: {
+          open: true,
+          openingTime: "12:00 AM",
+          closingTime: "11:59 PM",
+        },
+        tuesday: {
+          open: true,
+          openingTime: "12:00 AM",
+          closingTime: "11:59 PM",
+        },
+        wednesday: {
+          open: true,
+          openingTime: "12:00 AM",
+          closingTime: "11:59 PM",
+        },
+        thursday: {
+          open: true,
+          openingTime: "12:00 AM",
+          closingTime: "11:59 PM",
+        },
+        friday: {
+          open: true,
+          openingTime: "12:00 AM",
+          closingTime: "11:59 PM",
+        },
+        saturday: {
+          open: true,
+          openingTime: "12:00 AM",
+          closingTime: "11:59 PM",
+        },
+        sunday: {
+          open: true,
+          openingTime: "12:00 AM",
+          closingTime: "11:59 PM",
+        },
       },
       "weekends-closed": {
         ...info.businessHours,
         saturday: { open: false, openingTime: null, closingTime: null },
         sunday: { open: false, openingTime: null, closingTime: null },
       },
-    }
-    setTempData({ ...info.businessHours, ...presetHours[preset] })
-  }
+    };
+    setTempData({ ...info.businessHours, ...presetHours[preset] });
+  };
 
   if (!info)
     return (
@@ -242,7 +265,7 @@ export default function CompanyInfoPage() {
       <h1 className="text-3xl font-bold">Company Information</h1>
 
       <Section title="Contact Details" icon={<Phone size={20} />}>
-        {["phoneNumbers", "email", "faxNumbers"].map((field) => (
+        {["phoneNumbers", "email", "faxNumbers", "whatsapp"].map((field) => (
           <Card key={field}>
             <CardHeader className="flex justify-between items-center">
               <CardTitle className="flex items-center gap-2">
@@ -251,6 +274,7 @@ export default function CompanyInfoPage() {
                     phoneNumbers: <Phone size={18} />,
                     email: <Mail size={18} />,
                     faxNumbers: <Printer size={18} />,
+                    whatsapp: <MessageCircle size={18} />,
                   }[field]
                 }
                 {field.replace(/([A-Z])/g, " $1")}
@@ -328,7 +352,7 @@ export default function CompanyInfoPage() {
       </Section>
 
       <Section title="Address Information" icon={<MapPin size={20} />}>
-        {["address", "documentAddress", "whatsapp"].map((field) => (
+        {["address", "documentAddress"].map((field) => (
           <Card key={field}>
             <CardHeader className="flex justify-between items-center">
               <CardTitle className="flex items-center gap-2">
@@ -336,7 +360,6 @@ export default function CompanyInfoPage() {
                   {
                     address: <MapPin size={18} />,
                     documentAddress: <FileText size={18} />,
-                    whatsapp: <MessageCircle size={18} />,
                   }[field]
                 }
                 {field.replace(/([A-Z])/g, " $1")}
