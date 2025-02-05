@@ -149,7 +149,7 @@ export default function EventsPage() {
                   variant="destructive" 
                   size="sm" 
                   onClick={() => handleDelete(event.id)}
-                  disabled={deletingEvents[event.id]} // Disable button while deleting
+                  disabled={deletingEvents[event.id]}
                 >
                   {deletingEvents[event.id] ? 'Deleting...' : 'Delete'}
                 </Button>
