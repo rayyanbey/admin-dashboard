@@ -28,7 +28,7 @@ export default function EventsPage() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [deleting,setDeleting] = useState(true)
+  const [deletingEvents, setDeletingEvents] = useState({}) // Track deleting state per event
 
   useEffect(() => {
     fetchEvents()
@@ -66,6 +66,7 @@ export default function EventsPage() {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this event?")) {
       try {
+        setDeletingEvents(prev => ({ ...prev, [id]: true })) // Set deleting state for this event
         const response = await axios.delete(`http://localhost:3000/pages/apis/events/deleteEventById/${id}`)
         if (response.status === 200) {
           setEvents(prev => prev.filter(event => event.id !== id))
@@ -76,9 +77,8 @@ export default function EventsPage() {
       } catch (err) {
         console.error('Error deleting event:', err.response ? err.response.data : err.message)
         alert(err.message)
-      }
-      finally{
-        setDeleting(false)
+      } finally {
+        setDeletingEvents(prev => ({ ...prev, [id]: false })) // Reset deleting state for this event
       }
     }
   }
@@ -149,8 +149,9 @@ export default function EventsPage() {
                   variant="destructive" 
                   size="sm" 
                   onClick={() => handleDelete(event.id)}
+                  disabled={deletingEvents[event.id]} // Disable button while deleting
                 >
-                  {deleting ? 'Delete' : 'Deleting...'}
+                  {deletingEvents[event.id] ? 'Deleting...' : 'Delete'}
                 </Button>
               </TableCell>
             </TableRow>
