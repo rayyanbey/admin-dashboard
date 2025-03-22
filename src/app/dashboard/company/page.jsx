@@ -48,12 +48,14 @@ export default function CompanyInfoPage() {
   const [validationError, setValidationError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+
+     //https://dar-el-mecca.vercel.app/pages/apis/company/getCompanyInformation
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [companyInfoRes, businessHoursRes] = await Promise.all([
-          axios.get("http://localhost:3000/pages/apis/company/getCompanyInformation"),
-          axios.get("http://localhost:3000/pages/apis/company/getBusinessHoursAdmin"),
+          axios.get(`${process.env.NEXT_PUBLIC_HOST_NAME}/company/getCompanyInformation`),
+          axios.get(`${process.env.NEXT_PUBLIC_HOST_NAME}/company/getBusinessHoursAdmin`),
         ]);
 
         const { address, contactInformation } = companyInfoRes.data.data;

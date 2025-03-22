@@ -36,7 +36,7 @@ export default function EventsPage() {
 
   const fetchEvents = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/pages/apis/events/allEventsTitles')
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_HOST_NAME}/events/allEventsTitles`)
       console.log('API Response:', response.data); // Debugging
       const data = response.data
       if (data.status === 'success') {

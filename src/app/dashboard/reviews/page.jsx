@@ -29,7 +29,7 @@ export default function ReviewsPage() {
   const fetchReviews = async () => {
     setIsLoading(true)
     try {
-      const response = await axios.get(`http://localhost:3000/pages/apis/reviews/getReviews`)
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_HOST_NAME}/reviews/getReviews`)
       setReviews(Array.isArray(response.data.data) ? response.data.data : [])
     } catch (error) {
       console.error("Error fetching reviews:", error)
