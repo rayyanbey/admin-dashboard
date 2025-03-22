@@ -36,7 +36,7 @@ export default function EventsPage() {
 
   const fetchEvents = async () => {
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_HOST_NAME}/events/allEventsTitles`)
+      const response = await axios.get(`https://dar-el-mecca.vercel.app/pages/apis/events/allEventsTitles`)
       console.log('API Response:', response.data); // Debugging
       const data = response.data
       if (data.status === 'success') {
@@ -67,7 +67,7 @@ export default function EventsPage() {
     if (window.confirm("Are you sure you want to delete this event?")) {
       try {
         setDeletingEvents(prev => ({ ...prev, [id]: true })) // Set deleting state for this event
-        const response = await axios.delete(`http://localhost:3000/pages/apis/events/deleteEventById/${id}`)
+        const response = await axios.delete(`https://dar-el-mecca.vercel.app/pages/apis/events/deleteEventById/${id}`)
         if (response.status === 200) {
           setEvents(prev => prev.filter(event => event.id !== id))
           alert('Event deleted successfully')

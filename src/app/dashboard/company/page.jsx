@@ -54,8 +54,8 @@ export default function CompanyInfoPage() {
     const fetchData = async () => {
       try {
         const [companyInfoRes, businessHoursRes] = await Promise.all([
-          axios.get(`${process.env.NEXT_PUBLIC_HOST_NAME}/company/getCompanyInformation`),
-          axios.get(`${process.env.NEXT_PUBLIC_HOST_NAME}/company/getBusinessHoursAdmin`),
+          axios.get(`https://dar-el-mecca.vercel.app/pages/apis/company/getCompanyInformation`),
+          axios.get(`https://dar-el-mecca.vercel.app/pages/apis/company/getBusinessHoursAdmin`),
         ]);
 
         const { address, contactInformation } = companyInfoRes.data.data;
@@ -157,7 +157,7 @@ export default function CompanyInfoPage() {
         };
       }
 
-      await axios.put(`http://localhost:3000/pages/apis/company/${endpoint}`, payload);
+      await axios.put(`https://dar-el-mecca.vercel.app/pages/apis/company/${endpoint}`, payload);
       setInfo((prev) => ({
         ...prev,
         ...(endpoint === "updateContactInfo" ? payload : {}),

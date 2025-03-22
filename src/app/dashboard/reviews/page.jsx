@@ -29,7 +29,7 @@ export default function ReviewsPage() {
   const fetchReviews = async () => {
     setIsLoading(true)
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_HOST_NAME}/reviews/getReviews`)
+      const response = await axios.get(`https://dar-el-mecca.vercel.app/pages/apis/reviews/getReviews`)
       setReviews(Array.isArray(response.data.data) ? response.data.data : [])
     } catch (error) {
       console.error("Error fetching reviews:", error)
@@ -48,7 +48,7 @@ export default function ReviewsPage() {
     formData.append("image", newReview.image)
 
     try {
-      await axios.post(`http://localhost:3000/pages/apis/reviews/createReview`, formData, {
+      await axios.post(`https://dar-el-mecca.vercel.app/pages/apis/reviews/createReview`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -71,7 +71,7 @@ export default function ReviewsPage() {
   const handleDeleteReview = async (id) => {
     setActionInProgress(`delete-${id}`)
     try {
-      await axios.delete(`http://localhost:3000/pages/apis/reviews/deleteReview`, {
+      await axios.delete(`https://dar-el-mecca.vercel.app/pages/apis/reviews/deleteReview`, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -103,7 +103,7 @@ export default function ReviewsPage() {
 
       //https://dar-el-mecca.vercel.app/pages/apis/reviews/updateReview
       console.log(process.env.NEXT_PUBLIC_HOST_NAME)
-      await axios.put(`http://localhost:3000/pages/apis/reviews/updateReview`, payload, {
+      await axios.put(`https://dar-el-mecca.vercel.app/pages/apis/reviews/updateReview`, payload, {
         headers: {
           "Content-Type": "application/json",
         },
